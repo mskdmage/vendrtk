@@ -1,0 +1,8 @@
+[workspace]
+resolver = "3"
+members = [
+    # Bins
+    "crates/bin/vendrtk-server",
+    # Libs
+    "crates/lib/vendrtk-core",
+]
