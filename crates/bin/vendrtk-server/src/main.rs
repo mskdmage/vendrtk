@@ -1,22 +1,19 @@
-use axum::response::{Html, IntoResponse};
-use axum::routing::{Router, get};
 use tokio::net::TcpListener;
 use tracing::info;
+use vendrtk_server::config;
 
 #[tokio::main]
 async fn main() {
-    tracing_subscriber::fmt().init();
+    tracing_subscriber::fmt()
+        .without_time()
+        .with_target(false)
+        .with_env_filter(config().log_level.as_str())
+        .init();
 
-    let addr = std::net::SocketAddr::from(([127, 0, 0, 1], 8080));
+    let addr = config().socket_addr();
     let listener = TcpListener::bind(addr).await.unwrap();
 
-    let app = Router::new().route("/", get(root_handler));
-
-    axum::serve(listener, app).await.unwrap();
-
     info!("Server started: http://{}", addr);
-}
 
-async fn root_handler() -> impl IntoResponse {
-    Html(vendrtk_core::hello())
+    axum::serve(listener, vendrtk_server::app()).await.unwrap();
 }
