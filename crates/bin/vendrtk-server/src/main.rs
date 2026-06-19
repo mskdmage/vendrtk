@@ -18,5 +18,5 @@ async fn main() {
 }
 
 async fn root_handler() -> impl IntoResponse {
-    Html("<h1>Hello World!</h1>")
+    Html(vendrtk_core::hello())
 }
