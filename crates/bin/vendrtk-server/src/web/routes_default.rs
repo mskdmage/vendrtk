@@ -1,4 +1,3 @@
-use crate::config;
 use axum::{
     Router,
     handler::HandlerWithoutStateExt,
@@ -8,15 +7,12 @@ use axum::{
 };
 use tower_http::services::ServeDir;
 
-pub fn routes() -> Router {
-    Router::new().fallback_service(serve_dir())
+pub fn routes(public_dir: &str) -> Router {
+    Router::new().fallback_service(serve_dir(public_dir))
 }
 
-fn serve_dir() -> MethodRouter {
-    any_service(
-        ServeDir::new(config().public_dir.as_str())
-            .not_found_service(not_found_handler.into_service()),
-    )
+fn serve_dir(public_dir: &str) -> MethodRouter {
+    any_service(ServeDir::new(public_dir).not_found_service(not_found_handler.into_service()))
 }
 
 async fn not_found_handler() -> impl IntoResponse {

@@ -1,6 +1,4 @@
-use tokio::net::TcpListener;
-use tracing::info;
-use vendrtk_server::config;
+use vendrtk_server::{App, config};
 
 #[tokio::main]
 async fn main() {
@@ -10,10 +8,10 @@ async fn main() {
         .with_env_filter(config().log_level.as_str())
         .init();
 
-    let addr = config().socket_addr();
-    let listener = TcpListener::bind(addr).await.unwrap();
-
-    info!("Server started: http://{}", addr);
-
-    axum::serve(listener, vendrtk_server::app()).await.unwrap();
+    App::build(config().socket_addr(), &config().public_dir)
+        .await
+        .expect("failed to build server")
+        .run()
+        .await
+        .expect("server failed");
 }
