@@ -1,14 +1,24 @@
-use axum::{Json, Router, extract::Multipart, routing};
+use axum::{
+    Json, Router,
+    extract::{State, Multipart},
+    routing,
+};
 use serde::Serialize;
 use tracing::info;
 
+use std::sync::Arc;
+use crate::state::AppState;
 use crate::web::error::{Error, Result};
 
-pub fn routes() -> Router {
+pub fn routes(state: Arc<AppState>) -> Router {
     Router::new().route("/upload", routing::post(upload_handler))
+    .with_state(state)
 }
 
-async fn upload_handler(mut multipart: Multipart) -> Result<Json<UploadFileResponse>> {
+async fn upload_handler(
+    State(state): State<std::sync::Arc<AppState>>,
+    mut multipart: Multipart,
+) -> Result<Json<UploadFileResponse>> {
     while let Ok(Some(field)) = multipart.next_field().await {
         if field.name() != Some("file") {
             continue;
@@ -25,12 +35,18 @@ async fn upload_handler(mut multipart: Multipart) -> Result<Json<UploadFileRespo
 
         info!(%filename, size, "received upload");
 
-        let _ = bytes;
+        let doc = state
+            .vendor_reconciliation_service
+            .lock()
+            .map_err(|_| Error::InternalServer("service unavailable".into()))?
+            .save_pdf(&filename, &bytes)
+            .map_err(|e| Error::BadRequest(e.to_string()))?;
 
         return Ok(Json(UploadFileResponse {
             message: "file uploaded successfully".into(),
             filename,
             size,
+            key: doc.key,
         }));
     }
 
@@ -42,4 +58,5 @@ struct UploadFileResponse {
     message: String,
     filename: String,
     size: usize,
+    key: String,
 }

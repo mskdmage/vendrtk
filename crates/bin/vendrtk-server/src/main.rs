@@ -8,7 +8,10 @@ async fn main() {
         .with_env_filter(config().log_level.as_str())
         .init();
 
-    App::build(config().socket_addr(), &config().public_dir)
+    App::build(
+        config().socket_addr(),
+        &config().public_dir,
+    )
         .await
         .expect("failed to build server")
         .run()
