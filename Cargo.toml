@@ -7,3 +7,6 @@ members = [
     "crates/lib/vendrtk-core",
     "crates/lib/vendrtk-storage",
 ]
+
+[profile.dev]
+opt-level = 3
