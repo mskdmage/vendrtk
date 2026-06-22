@@ -5,6 +5,7 @@ members = [
     "crates/bin/vendrtk-server",
     # Libs
     "crates/lib/vendrtk-core",
+    "crates/lib/vendrtk-storage",
 ]
 
 [profile.dev]
