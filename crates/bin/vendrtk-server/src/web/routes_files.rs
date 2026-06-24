@@ -3,9 +3,8 @@ use axum::{
     extract::{State, Multipart},
     routing,
 };
-use serde::Serialize;
 use tracing::info;
-use vendrtk_core::ocr::azure::AnalyzeOperationResponse;
+use vendrtk_core::parsers::models::ParsedInvoices;
 
 use std::sync::Arc;
 use crate::state::AppState;
@@ -19,7 +18,7 @@ pub fn routes(state: Arc<AppState>) -> Router {
 async fn upload_handler(
     State(state): State<std::sync::Arc<AppState>>,
     mut multipart: Multipart,
-) -> Result<Json<UploadFileResponse>> {
+) -> Result<Json<ParsedInvoices>> {
     while let Ok(Some(field)) = multipart.next_field().await {
         if field.name() != Some("file") {
             continue;
@@ -32,11 +31,9 @@ async fn upload_handler(
             .await
             .map_err(|_| Error::BadRequest("failed to read file".into()))?;
 
-        let size = bytes.len();
+        info!(%filename, size = bytes.len(), "received upload");
 
-        info!(%filename, size, "received upload");
-
-        let ocr_doc = state
+        let parsed_invoices = state
             .vendor_reconciliation_service
             .lock()
             .await
@@ -44,23 +41,8 @@ async fn upload_handler(
             .await
             .map_err(|e| Error::BadRequest(e.to_string()))?;
 
-        return Ok(Json(UploadFileResponse {
-            message: "file uploaded successfully".into(),
-            filename,
-            size,
-            key: ocr_doc.key,
-            ocr: ocr_doc.analyze_operation_response,
-        }));
+        return Ok(Json(parsed_invoices));
     }
 
     Err(Error::BadRequest("missing file field".into()))
-}
-
-#[derive(Serialize)]
-struct UploadFileResponse {
-    message: String,
-    filename: String,
-    size: usize,
-    key: String,
-    ocr: AnalyzeOperationResponse,
 }

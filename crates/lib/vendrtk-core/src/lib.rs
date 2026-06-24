@@ -46,4 +46,8 @@ pub mod parsers {
         pub use vendrtk_parsers::traits::parsed_document::{ParsedDocument, ParsedPayload};
         pub use vendrtk_parsers::traits::parser::Parser;
     }
+
+    pub mod prebuilt {
+        pub use vendrtk_parsers::prebuilt::SampleInvoiceParser;
+    }
 }

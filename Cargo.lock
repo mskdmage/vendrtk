@@ -2262,6 +2262,7 @@ name = "vendrtk-parsers"
 version = "0.1.0"
 dependencies = [
  "serde",
+ "tokio",
  "vendrtk-ocr",
 ]
 

@@ -6,3 +6,6 @@ edition = "2024"
 [dependencies]
 serde = { version = "1.0.228", features = ["derive"] }
 vendrtk-ocr = { path = "../../lib/vendrtk-ocr" }
+
+[dev-dependencies]
+tokio = { version = "1.52", features = ["macros", "rt"] }
