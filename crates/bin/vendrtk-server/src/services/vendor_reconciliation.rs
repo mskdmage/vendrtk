@@ -5,7 +5,7 @@ use vendrtk_core::storage::local::{
     LocalDocumentStore, LocalOcrProcessedStore, LocalParsedInvoiceStore, LocalParsedSoWStore,
 };
 use vendrtk_core::storage::models::{
-    pdf_from_bytes, DocumentIntelligenceOcrProcessedDocument, PdfDocument,
+    pdf_from_bytes, PdfDocument, DocumentIntelligenceOcrProcessedDocument,
 };
 
 use vendrtk_core::ocr::azure::{ApiVersion, Auth, Config, Credential, DocumentIntelligenceClient};
@@ -51,7 +51,7 @@ impl VendorReconciliationService {
         &mut self,
         filename: &str,
         bytes: &[u8],
-    ) -> std::io::Result<PdfDocument> {
+    ) -> std::io::Result<DocumentIntelligenceOcrProcessedDocument> {
         let path = Path::new(&self.landing_dir).join(filename);
         std::fs::write(&path, bytes)?;
         self.landing_store
@@ -60,21 +60,29 @@ impl VendorReconciliationService {
 
         let doc = pdf_from_bytes(&path, bytes).map_err(|e| std::io::Error::other(e.to_string()))?;
 
-        match self.ocr_client.analyze_bytes(bytes).await {
-            Ok(response) => {
-                let ocr_doc = DocumentIntelligenceOcrProcessedDocument {
-                    key: doc.key.clone(),
-                    analyze_operation_response: response,
-                };
-                if let Err(e) = self.processed_store.save(ocr_doc) {
-                    tracing::warn!(error = %e, key = %doc.key, "failed to save OCR result");
-                }
-            }
-            Err(e) => {
-                tracing::warn!(error = %e, key = %doc.key, "OCR analysis failed");
-            }
+        if let Some(ocr_doc) = self
+            .processed_store
+            .load_payload(&doc.key)
+            .map_err(|e| std::io::Error::other(e.to_string()))?
+        {
+            return Ok(ocr_doc);
         }
 
-        Ok(doc)
+        let response = self
+            .ocr_client
+            .analyze_bytes(bytes)
+            .await
+            .map_err(|e| std::io::Error::other(e.to_string()))?;
+
+        let ocr_doc = DocumentIntelligenceOcrProcessedDocument {
+            key: doc.key,
+            analyze_operation_response: response,
+        };
+
+        self.processed_store
+            .save(ocr_doc.clone())
+            .map_err(|e| std::io::Error::other(e.to_string()))?;
+
+        Ok(ocr_doc)
     }
 }

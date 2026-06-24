@@ -5,6 +5,7 @@ use axum::{
 };
 use serde::Serialize;
 use tracing::info;
+use vendrtk_core::ocr::azure::AnalyzeOperationResponse;
 
 use std::sync::Arc;
 use crate::state::AppState;
@@ -35,7 +36,7 @@ async fn upload_handler(
 
         info!(%filename, size, "received upload");
 
-        let doc = state
+        let ocr_doc = state
             .vendor_reconciliation_service
             .lock()
             .await
@@ -47,7 +48,8 @@ async fn upload_handler(
             message: "file uploaded successfully".into(),
             filename,
             size,
-            key: doc.key,
+            key: ocr_doc.key,
+            ocr: ocr_doc.analyze_operation_response,
         }));
     }
 
@@ -60,4 +62,5 @@ struct UploadFileResponse {
     filename: String,
     size: usize,
     key: String,
+    ocr: AnalyzeOperationResponse,
 }
