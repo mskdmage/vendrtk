@@ -1,6 +1,6 @@
-use crate::traits::ocr_processed_document::OcrProcessedDocument;
 use serde::{Deserialize, Serialize};
-use crate::error::Result;
+use vendrtk_ocr::error::Result;
+use vendrtk_ocr::traits::ocr_processed_document::OcrProcessedDocument;
 use vendrtk_ocr::azure_document_intelligence::models::AnalyzeOperationResponse;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

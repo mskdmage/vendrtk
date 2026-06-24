@@ -6,3 +6,4 @@ edition = "2024"
 [dependencies]
 vendrtk-storage = { path = "../../lib/vendrtk-storage" }
 vendrtk-ocr = { path = "../../lib/vendrtk-ocr" }
+vendrtk-parsers = { path = "../../lib/vendrtk-parsers" }
