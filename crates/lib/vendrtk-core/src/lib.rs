@@ -48,6 +48,10 @@ pub mod parsers {
     }
 
     pub mod prebuilt {
-        pub use vendrtk_parsers::prebuilt::SampleInvoiceParser;
+        pub mod invoice {
+            pub use vendrtk_parsers::prebuilt::invoice::llm::parser::{
+                LLMInvoiceParser, SampleInvoiceParser,
+            };
+        }
     }
 }

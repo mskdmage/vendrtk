@@ -17,6 +17,9 @@ pub struct Config {
     pub log_level: String,
     pub azure_cognitive_services_endpoint: String,
     pub azure_cognitive_services_key: String,
+    pub azure_openai_endpoint: String,
+    pub azure_openai_deployment: String,
+    pub azure_openai_api_version: String,
 }
 
 impl Default for Config {
@@ -28,6 +31,9 @@ impl Default for Config {
             log_level: "info".into(),
             azure_cognitive_services_endpoint: "".into(),
             azure_cognitive_services_key: "".into(),
+            azure_openai_endpoint: "".into(),
+            azure_openai_deployment: "gpt-5.2".into(),
+            azure_openai_api_version: "2025-04-01-preview".into(),
         }
     }
 }
@@ -53,6 +59,9 @@ impl Config {
 
             azure_cognitive_services_endpoint: env::var("AZURE_COGNITIVE_SERVICES_ENDPOINT").unwrap_or(defaults.azure_cognitive_services_endpoint),
             azure_cognitive_services_key: env::var("AZURE_COGNITIVE_SERVICES_KEY").unwrap_or(defaults.azure_cognitive_services_key),
+            azure_openai_endpoint: env::var("AZURE_OPENAI_ENDPOINT").unwrap_or(defaults.azure_openai_endpoint),
+            azure_openai_deployment: env::var("AZURE_OPENAI_DEPLOYMENT").unwrap_or(defaults.azure_openai_deployment),
+            azure_openai_api_version: env::var("AZURE_OPENAI_API_VERSION").unwrap_or(defaults.azure_openai_api_version),
         }
     }
 

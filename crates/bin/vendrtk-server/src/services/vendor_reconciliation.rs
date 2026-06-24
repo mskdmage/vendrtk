@@ -1,10 +1,11 @@
 use std::path::Path;
 use std::sync::Arc;
 
+use crate::config::config;
 use vendrtk_core::ocr::azure::{ApiVersion, Auth, Config, Credential, DocumentIntelligenceClient};
 use vendrtk_core::ocr::traits::OCRClient;
 use vendrtk_core::parsers::models::{ParsedInvoices, ParsedSoWs};
-use vendrtk_core::parsers::prebuilt::SampleInvoiceParser;
+use vendrtk_core::parsers::prebuilt::invoice::SampleInvoiceParser;
 use vendrtk_core::parsers::traits::Parser;
 use vendrtk_core::storage::local::{
     LocalDocumentStore, LocalOcrProcessedStore, LocalParsedStore,
@@ -21,6 +22,7 @@ pub struct VendorReconciliationService {
     parsed_invoice_store: LocalParsedStore<ParsedInvoices>,
     parsed_sow_store: LocalParsedStore<ParsedSoWs>,
     ocr_client: DocumentIntelligenceClient,
+    invoice_parser: SampleInvoiceParser,
 }
 
 impl VendorReconciliationService {
@@ -30,6 +32,8 @@ impl VendorReconciliationService {
         parsed_invoices_dir: &str,
         parsed_sows_dir: &str,
     ) -> std::io::Result<Self> {
+        let cfg = config();
+
         Ok(Self {
             landing_dir: landing_dir.to_string(),
             landing_store: LocalDocumentStore::new(landing_dir)
@@ -41,10 +45,15 @@ impl VendorReconciliationService {
             parsed_sow_store: LocalParsedStore::new(parsed_sows_dir)
                 .map_err(|e| std::io::Error::other(e.to_string()))?,
             ocr_client: DocumentIntelligenceClient::new(
-                std::env::var("AZURE_COGNITIVE_SERVICES_ENDPOINT").unwrap(),
+                cfg.azure_cognitive_services_endpoint.clone(),
                 ApiVersion::Default,
                 Auth::Credential(Arc::new(Credential::new(None, None, None).unwrap())),
                 Config::default(),
+            ),
+            invoice_parser: SampleInvoiceParser::new(
+                cfg.azure_openai_endpoint.clone(),
+                cfg.azure_openai_deployment.clone(),
+                cfg.azure_openai_api_version.clone(),
             ),
         })
     }
@@ -95,7 +104,8 @@ impl VendorReconciliationService {
         {
             Some(cached) => cached,
             None => {
-                let parsed = SampleInvoiceParser
+                let parsed = self
+                    .invoice_parser
                     .parse(Some(ocr_doc.clone()), Some(bytes))
                     .await
                     .map_err(|e| std::io::Error::other(e.to_string()))?;
