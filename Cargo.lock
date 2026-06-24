@@ -2257,6 +2257,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "vendrtk-parsers"
+version = "0.1.0"
+
+[[package]]
 name = "vendrtk-server"
 version = "0.1.0"
 dependencies = [
