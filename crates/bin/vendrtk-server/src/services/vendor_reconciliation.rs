@@ -2,11 +2,12 @@ use std::path::Path;
 use std::sync::Arc;
 
 use vendrtk_core::storage::local::{
-    LocalDocumentStore, LocalOcrProcessedStore, LocalParsedInvoiceStore, LocalParsedSoWStore,
+    LocalDocumentStore, LocalOcrProcessedStore, LocalParsedStore,
 };
 use vendrtk_core::storage::models::{
     pdf_from_bytes, PdfDocument, DocumentIntelligenceOcrProcessedDocument,
 };
+use vendrtk_core::parsers::models::{ParsedInvoices, ParsedSoWs};
 
 use vendrtk_core::ocr::azure::{ApiVersion, Auth, Config, Credential, DocumentIntelligenceClient};
 use vendrtk_core::ocr::traits::OCRClient;
@@ -16,8 +17,8 @@ pub struct VendorReconciliationService {
     landing_dir: String,
     landing_store: LocalDocumentStore<PdfDocument>,
     processed_store: LocalOcrProcessedStore<DocumentIntelligenceOcrProcessedDocument>,
-    parsed_invoice_store: LocalParsedInvoiceStore,
-    parsed_sow_store: LocalParsedSoWStore,
+    parsed_invoice_store: LocalParsedStore<ParsedInvoices>,
+    parsed_sow_store: LocalParsedStore<ParsedSoWs>,
     ocr_client: DocumentIntelligenceClient,
 }
 
@@ -34,9 +35,9 @@ impl VendorReconciliationService {
                 .map_err(|e| std::io::Error::other(e.to_string()))?,
             processed_store: LocalOcrProcessedStore::new(ocr_dir)
                 .map_err(|e| std::io::Error::other(e.to_string()))?,
-            parsed_invoice_store: LocalParsedInvoiceStore::new(parsed_invoices_dir)
+            parsed_invoice_store: LocalParsedStore::new(parsed_invoices_dir)
                 .map_err(|e| std::io::Error::other(e.to_string()))?,
-            parsed_sow_store: LocalParsedSoWStore::new(parsed_sows_dir)
+            parsed_sow_store: LocalParsedStore::new(parsed_sows_dir)
                 .map_err(|e| std::io::Error::other(e.to_string()))?,
             ocr_client: DocumentIntelligenceClient::new(
                 std::env::var("AZURE_COGNITIVE_SERVICES_ENDPOINT").unwrap(),

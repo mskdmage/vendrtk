@@ -11,3 +11,4 @@ md5 = "0.8.0"
 sha2 = "0.11.0"
 chrono = { version = "0.4", features = ["serde"] }
 vendrtk-ocr = { path = "../../lib/vendrtk-ocr" }
+vendrtk-parsers = { path = "../../lib/vendrtk-parsers" }

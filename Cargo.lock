@@ -2238,6 +2238,7 @@ name = "vendrtk-core"
 version = "0.1.0"
 dependencies = [
  "vendrtk-ocr",
+ "vendrtk-parsers",
  "vendrtk-storage",
 ]
 
@@ -2259,6 +2260,10 @@ dependencies = [
 [[package]]
 name = "vendrtk-parsers"
 version = "0.1.0"
+dependencies = [
+ "serde",
+ "vendrtk-ocr",
+]
 
 [[package]]
 name = "vendrtk-server"
@@ -2289,6 +2294,7 @@ dependencies = [
  "sha2",
  "tracing",
  "vendrtk-ocr",
+ "vendrtk-parsers",
 ]
 
 [[package]]

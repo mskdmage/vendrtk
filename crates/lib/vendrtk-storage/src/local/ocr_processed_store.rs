@@ -7,13 +7,12 @@ use serde::{Deserialize, Serialize};
 use std::fs::DirBuilder;
 use tracing::debug;
 
+use vendrtk_ocr::traits::ocr_processed_document::OcrProcessedDocument;
+
 use crate::{
     error::{Error, Result},
     models::ledger::LedgerEntry,
-    traits::{
-        ocr_processed_document::OcrProcessedDocument,
-        store::{ProcessedDocumentStore, Store},
-    },
+    traits::store::{ProcessedDocumentStore, Store},
 };
 
 pub struct LocalOcrProcessedStore<T: OcrProcessedDocument> {
@@ -138,8 +137,8 @@ mod tests {
 
     impl OcrProcessedDocument for TestOcrDoc {
         fn key(&self) -> &str { &self.id }
-        fn raw_content(&self) -> Result<String> { Ok(self.raw.clone()) }
-        fn pages(&self) -> Result<Vec<String>> { Ok(vec![]) }
+        fn raw_content(&self) -> vendrtk_ocr::error::Result<String> { Ok(self.raw.clone()) }
+        fn pages(&self) -> vendrtk_ocr::error::Result<Vec<String>> { Ok(vec![]) }
     }
 
     struct TempDir(PathBuf);

@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
-use crate::traits::parsed_document::ParsedDocument;
 use crate::error::Result;
+use crate::traits::parsed_document::{ParsedDocument, ParsedPayload};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ParsedSoWs {
@@ -8,16 +8,17 @@ pub struct ParsedSoWs {
     pub results: Vec<SoW>,
 }
 
-impl ParsedDocument<SoW> for ParsedSoWs {
+impl ParsedPayload for ParsedSoWs {
     fn key(&self) -> &str {
         &self.key
     }
+}
 
+impl ParsedDocument<SoW> for ParsedSoWs {
     fn results(&self) -> Result<Vec<SoW>> {
         Ok(self.results.clone())
     }
 }
-
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct SoW {
     pub header: SoWHeader,
