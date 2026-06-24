@@ -21,3 +21,17 @@ pub mod storage {
         pub use vendrtk_storage::traits::parsed_document::ParsedDocument;
     }
 }
+
+pub mod ocr {
+    pub mod traits {
+        pub use vendrtk_ocr::traits::client::OCRClient;
+    }
+
+    pub mod azure {
+        pub use vendrtk_ocr::azure_document_intelligence::client::DocumentIntelligenceClient;
+        pub use vendrtk_ocr::azure_document_intelligence::config::Config;
+        pub use vendrtk_ocr::azure_document_intelligence::auth::{Auth, Credential};
+        pub use vendrtk_ocr::azure_document_intelligence::models::AnalyzeOperationResponse;
+        pub use vendrtk_ocr::azure_document_intelligence::api_version::ApiVersion;
+    }
+}

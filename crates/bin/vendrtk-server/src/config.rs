@@ -15,6 +15,8 @@ pub struct Config {
     pub port: u16,
     pub public_dir: String,
     pub log_level: String,
+    pub azure_cognitive_services_endpoint: String,
+    pub azure_cognitive_services_key: String,
 }
 
 impl Default for Config {
@@ -24,6 +26,8 @@ impl Default for Config {
             port: 8080,
             public_dir: "public".into(),
             log_level: "info".into(),
+            azure_cognitive_services_endpoint: "".into(),
+            azure_cognitive_services_key: "".into(),
         }
     }
 }
@@ -46,6 +50,9 @@ impl Config {
             public_dir: env::var("PUBLIC_DIR").unwrap_or(defaults.public_dir),
 
             log_level: env::var("LOG_LEVEL").unwrap_or(defaults.log_level),
+
+            azure_cognitive_services_endpoint: env::var("AZURE_COGNITIVE_SERVICES_ENDPOINT").unwrap_or(defaults.azure_cognitive_services_endpoint),
+            azure_cognitive_services_key: env::var("AZURE_COGNITIVE_SERVICES_KEY").unwrap_or(defaults.azure_cognitive_services_key),
         }
     }
 

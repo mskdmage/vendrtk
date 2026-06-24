@@ -38,8 +38,9 @@ async fn upload_handler(
         let doc = state
             .vendor_reconciliation_service
             .lock()
-            .map_err(|_| Error::InternalServer("service unavailable".into()))?
+            .await
             .save_pdf(&filename, &bytes)
+            .await
             .map_err(|e| Error::BadRequest(e.to_string()))?;
 
         return Ok(Json(UploadFileResponse {
