@@ -7,3 +7,4 @@ edition = "2024"
 vendrtk-storage = { path = "../../lib/vendrtk-storage" }
 vendrtk-ocr = { path = "../../lib/vendrtk-ocr" }
 vendrtk-parsers = { path = "../../lib/vendrtk-parsers" }
+vendrtk-azure = { path = "../../lib/vendrtk-azure" }

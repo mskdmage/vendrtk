@@ -20,12 +20,15 @@ pub struct App {
 
 impl App {
     pub async fn build(addr: SocketAddr, public_dir: &str) -> std::io::Result<Self> {
-        let state = Arc::new(AppState::new(
-            "testfiles/samples",
-            "testfiles/ocr",
-            "testfiles/parsed/invoices",
-            "testfiles/parsed/sows",
-        )?);
+        let state = Arc::new(
+            AppState::new(
+                "testfiles/samples",
+                "testfiles/ocr",
+                "testfiles/parsed/invoices",
+                "testfiles/parsed/sows",
+            )
+            .await?,
+        );
         let listener = TcpListener::bind(addr).await?;
         let addr = listener.local_addr()?;
 

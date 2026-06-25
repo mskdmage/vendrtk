@@ -7,19 +7,22 @@ pub struct AppState {
 }
 
 impl AppState {
-    pub fn new(
+    pub async fn new(
         landing_dir: &str,
         ocr_dir: &str,
         parsed_invoices_dir: &str,
         parsed_sows_dir: &str,
     ) -> std::io::Result<Self> {
         Ok(Self {
-            vendor_reconciliation_service: Mutex::new(VendorReconciliationService::new(
-                landing_dir,
-                ocr_dir,
-                parsed_invoices_dir,
-                parsed_sows_dir,
-            )?),
+            vendor_reconciliation_service: Mutex::new(
+                VendorReconciliationService::new(
+                    landing_dir,
+                    ocr_dir,
+                    parsed_invoices_dir,
+                    parsed_sows_dir,
+                )
+                .await?,
+            ),
         })
     }
 }

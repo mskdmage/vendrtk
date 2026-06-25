@@ -2,11 +2,11 @@ use std::path::Path;
 use std::sync::Arc;
 
 use crate::config::config;
+use vendrtk_core::azure::foundry::FoundryClient;
 use vendrtk_core::ocr::azure::{ApiVersion, Auth, Config, Credential, DocumentIntelligenceClient};
 use vendrtk_core::ocr::traits::OCRClient;
 use vendrtk_core::parsers::models::{ParsedInvoices, ParsedSoWs};
 use vendrtk_core::parsers::prebuilt::invoice::SampleInvoiceParser;
-use vendrtk_core::parsers::traits::Parser;
 use vendrtk_core::storage::local::{
     LocalDocumentStore, LocalOcrProcessedStore, LocalParsedStore,
 };
@@ -22,17 +22,26 @@ pub struct VendorReconciliationService {
     parsed_invoice_store: LocalParsedStore<ParsedInvoices>,
     parsed_sow_store: LocalParsedStore<ParsedSoWs>,
     ocr_client: DocumentIntelligenceClient,
+    llm_client: FoundryClient,
     invoice_parser: SampleInvoiceParser,
 }
 
 impl VendorReconciliationService {
-    pub fn new(
+    pub async fn new(
         landing_dir: &str,
         ocr_dir: &str,
         parsed_invoices_dir: &str,
         parsed_sows_dir: &str,
     ) -> std::io::Result<Self> {
         let cfg = config();
+
+        let llm_client = FoundryClient::connect(
+            &cfg.azure_openai_endpoint,
+            &cfg.azure_openai_api_version,
+            cfg.azure_openai_deployment.clone(),
+        )
+        .await
+        .map_err(|e| std::io::Error::other(e.to_string()))?;
 
         Ok(Self {
             landing_dir: landing_dir.to_string(),
@@ -50,11 +59,8 @@ impl VendorReconciliationService {
                 Auth::Credential(Arc::new(Credential::new(None, None, None).unwrap())),
                 Config::default(),
             ),
-            invoice_parser: SampleInvoiceParser::new(
-                cfg.azure_openai_endpoint.clone(),
-                cfg.azure_openai_deployment.clone(),
-                cfg.azure_openai_api_version.clone(),
-            ),
+            llm_client,
+            invoice_parser: SampleInvoiceParser::new(),
         })
     }
 
@@ -106,7 +112,7 @@ impl VendorReconciliationService {
             None => {
                 let parsed = self
                     .invoice_parser
-                    .parse(Some(ocr_doc.clone()), Some(bytes))
+                    .parse(&self.llm_client, ocr_doc.clone())
                     .await
                     .map_err(|e| std::io::Error::other(e.to_string()))?;
 
