@@ -8,8 +8,12 @@ pub enum Error {
     #[error("authentication failed: {0}")]
     Auth(String),
 
-    #[error(transparent)]
-    Request(#[from] reqwest::Error),
+    #[error("{context}: {source}")]
+    Request {
+        context: String,
+        #[source]
+        source: reqwest::Error,
+    },
 
     #[error("API error ({status}): {message}")]
     Api { status: u16, message: String },
@@ -25,4 +29,13 @@ pub enum Error {
 
     #[error("client setup failed: {0}")]
     Client(String),
+}
+
+impl Error {
+    pub fn request(context: impl Into<String>, source: reqwest::Error) -> Self {
+        Self::Request {
+            context: context.into(),
+            source,
+        }
+    }
 }

@@ -1,6 +1,8 @@
 use std::path::Path;
 use std::sync::Arc;
 
+use tokio::sync::OnceCell;
+
 use crate::config::config;
 use crate::services::error::Result;
 use vendrtk_core::azure::foundry::FoundryClient;
@@ -21,8 +23,8 @@ pub struct VendorReconciliationService {
     processed_store: LocalOcrProcessedStore<DocumentIntelligenceOcrProcessedDocument>,
     parsed_invoice_store: LocalParsedStore<ParsedInvoices>,
     parsed_sow_store: LocalParsedStore<ParsedSoWs>,
-    ocr_client: DocumentIntelligenceClient,
-    llm_client: FoundryClient,
+    ocr_client: OnceCell<DocumentIntelligenceClient>,
+    llm_client: OnceCell<FoundryClient>,
     invoice_parser: SampleInvoiceParser,
     sow_parser: SampleSoWParser,
 }
@@ -34,31 +36,56 @@ impl VendorReconciliationService {
         parsed_invoices_dir: &str,
         parsed_sows_dir: &str,
     ) -> Result<Self> {
-        let cfg = config();
-
-        let llm_client = FoundryClient::connect(
-            &cfg.azure_openai_endpoint,
-            &cfg.azure_openai_api_version,
-            cfg.azure_openai_deployment.clone(),
-        )
-        .await?;
-
         Ok(Self {
             landing_dir: landing_dir.to_string(),
             landing_store: LocalDocumentStore::new(landing_dir)?,
             processed_store: LocalOcrProcessedStore::new(ocr_dir)?,
             parsed_invoice_store: LocalParsedStore::new(parsed_invoices_dir)?,
             parsed_sow_store: LocalParsedStore::new(parsed_sows_dir)?,
-            ocr_client: DocumentIntelligenceClient::new(
-                cfg.azure_cognitive_services_endpoint.clone(),
-                ApiVersion::Default,
-                Auth::Credential(Arc::new(Credential::new(None, None, None)?)),
-                Config::default(),
-            ),
-            llm_client,
+            ocr_client: OnceCell::new(),
+            llm_client: OnceCell::new(),
             invoice_parser: SampleInvoiceParser::new(),
             sow_parser: SampleSoWParser::new(),
         })
+    }
+
+    async fn ocr_client(&self) -> Result<&DocumentIntelligenceClient> {
+        if let Some(client) = self.ocr_client.get() {
+            return Ok(client);
+        }
+
+        let cfg = config();
+        let auth = if cfg.azure_cognitive_services_key.is_empty() {
+            Auth::Credential(Arc::new(Credential::new(None, None, None)?))
+        } else {
+            Auth::ApiKey(cfg.azure_cognitive_services_key.clone())
+        };
+        let client = DocumentIntelligenceClient::new(
+            cfg.azure_cognitive_services_endpoint.clone(),
+            ApiVersion::Default,
+            auth,
+            Config::default(),
+        )?;
+
+        let _ = self.ocr_client.set(client);
+        Ok(self.ocr_client.get().expect("ocr client just initialized"))
+    }
+
+    async fn llm_client(&self) -> Result<&FoundryClient> {
+        if let Some(client) = self.llm_client.get() {
+            return Ok(client);
+        }
+
+        let cfg = config();
+        let client = FoundryClient::connect(
+            &cfg.azure_openai_endpoint,
+            &cfg.azure_openai_api_version,
+            cfg.azure_openai_deployment.clone(),
+        )
+        .await?;
+
+        let _ = self.llm_client.set(client);
+        Ok(self.llm_client.get().expect("llm client just initialized"))
     }
 
     pub async fn save_pdf(&mut self, filename: &str, bytes: &[u8]) -> Result<ParsedInvoices> {
@@ -67,9 +94,10 @@ impl VendorReconciliationService {
         let parsed_invoices = match self.parsed_invoice_store.load_payload(&doc.key)? {
             Some(cached) => cached,
             None => {
+                let llm = self.llm_client().await?;
                 let parsed = self
                     .invoice_parser
-                    .parse(&self.llm_client, ocr_doc.clone())
+                    .parse(llm, ocr_doc.clone())
                     .await?;
 
                 self.parsed_invoice_store.save(parsed.clone())?;
@@ -87,9 +115,10 @@ impl VendorReconciliationService {
         let parsed_sows = match self.parsed_sow_store.load_payload(&doc.key)? {
             Some(cached) => cached,
             None => {
+                let llm = self.llm_client().await?;
                 let parsed = self
                     .sow_parser
-                    .parse(&self.llm_client, ocr_doc.clone())
+                    .parse(llm, ocr_doc.clone())
                     .await?;
 
                 self.parsed_sow_store.save(parsed.clone())?;
@@ -115,7 +144,8 @@ impl VendorReconciliationService {
         let ocr_doc = match self.processed_store.load_payload(&doc.key)? {
             Some(cached) => cached,
             None => {
-                let response = self.ocr_client.analyze_bytes(bytes).await?;
+                let ocr = self.ocr_client().await?;
+                let response = ocr.analyze_bytes(bytes).await?;
 
                 let ocr_doc = DocumentIntelligenceOcrProcessedDocument {
                     key: doc.key.clone(),

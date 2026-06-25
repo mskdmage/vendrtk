@@ -28,7 +28,7 @@ impl From<ServiceError> for Error {
             }
             ServiceError::Storage(StorageError::NotFound(key)) => Self::NotFound(key.clone()),
             _ => {
-                tracing::error!(error = %err, "pipeline failed");
+                tracing::error!(error = ?err, "pipeline failed");
                 Self::InternalServer
             }
         }

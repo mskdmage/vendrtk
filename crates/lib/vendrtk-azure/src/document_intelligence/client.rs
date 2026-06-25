@@ -28,14 +28,26 @@ pub struct DocumentIntelligenceClient {
 }
 
 impl DocumentIntelligenceClient {
-    pub fn new(endpoint: String, api_version: ApiVersion, auth: Auth, config: Config) -> Self {
-        Self {
+    pub fn new(
+        endpoint: String,
+        api_version: ApiVersion,
+        auth: Auth,
+        config: Config,
+    ) -> Result<Self> {
+        let endpoint = endpoint.trim_end_matches('/').to_string();
+        if endpoint.is_empty() {
+            return Err(Error::Config(
+                "AZURE_COGNITIVE_SERVICES_ENDPOINT is not set".into(),
+            ));
+        }
+
+        Ok(Self {
             http_client: HttpClient::new(),
-            endpoint: endpoint.trim_end_matches('/').to_string(),
+            endpoint,
             api_version,
             auth,
             config,
-        }
+        })
     }
 
     pub fn from_env(config: Option<Config>) -> Result<Self> {
@@ -59,14 +71,14 @@ impl DocumentIntelligenceClient {
             ApiVersion::Default,
             auth,
             config.unwrap_or_default(),
-        ))
+        )?)
     }
 
     pub fn with_api_key(
         endpoint: impl Into<String>,
         api_key: impl Into<String>,
         config: Option<Config>,
-    ) -> Self {
+    ) -> Result<Self> {
         Self::new(
             endpoint.into(),
             ApiVersion::Default,
@@ -79,7 +91,7 @@ impl DocumentIntelligenceClient {
         endpoint: impl Into<String>,
         credential: Credential,
         config: Option<Config>,
-    ) -> Self {
+    ) -> Result<Self> {
         Self::new(
             endpoint.into(),
             ApiVersion::Default,
@@ -129,7 +141,8 @@ impl DocumentIntelligenceClient {
             .headers(headers)
             .json(&body)
             .send()
-            .await?;
+            .await
+            .map_err(|e| Error::request(format!("POST {url}"), e))?;
 
         let status = response.status();
         if status == StatusCode::ACCEPTED {
@@ -153,7 +166,8 @@ impl DocumentIntelligenceClient {
                 .get(operation_url)
                 .headers(headers)
                 .send()
-                .await?;
+                .await
+                .map_err(|e| Error::request(format!("GET {operation_url}"), e))?;
 
             let status = response.status();
             if !status.is_success() {
@@ -164,7 +178,10 @@ impl DocumentIntelligenceClient {
                 });
             }
 
-            let body: AnalyzeOperationResponse = response.json().await?;
+            let body: AnalyzeOperationResponse = response
+                .json()
+                .await
+                .map_err(|e| Error::request(format!("decode poll response from {operation_url}"), e))?;
 
             match body.status.as_str() {
                 "succeeded" => return Ok(body),
