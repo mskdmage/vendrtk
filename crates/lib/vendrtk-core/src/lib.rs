@@ -60,5 +60,10 @@ pub mod parsers {
                 LLMInvoiceParser, SampleInvoiceParser,
             };
         }
+        pub mod sow {
+            pub use vendrtk_parsers::prebuilt::sow::llm::parser::{
+                LLMSoWParser, SampleSoWParser,
+            };
+        }
     }
 }
