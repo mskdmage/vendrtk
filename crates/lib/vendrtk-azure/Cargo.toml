@@ -16,3 +16,4 @@ rig = "0.39.0"
 schemars = "1.2.1"
 vendrtk-ocr = { path = "../../lib/vendrtk-ocr" }
 vendrtk-parsers = { path = "../../lib/vendrtk-parsers" }
+thiserror = "2.0.18"

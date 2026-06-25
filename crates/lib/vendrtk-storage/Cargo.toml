@@ -13,3 +13,4 @@ chrono = { version = "0.4", features = ["serde"] }
 vendrtk-ocr = { path = "../../lib/vendrtk-ocr" }
 vendrtk-azure = { path = "../../lib/vendrtk-azure" }
 vendrtk-parsers = { path = "../../lib/vendrtk-parsers" }
+thiserror = "2.0.18"

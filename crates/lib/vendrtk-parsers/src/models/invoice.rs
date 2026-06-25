@@ -1,6 +1,6 @@
-use serde::{Deserialize, Serialize};
 use crate::error::Result;
 use crate::traits::parsed_document::{ParsedDocument, ParsedPayload};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ParsedInvoices {

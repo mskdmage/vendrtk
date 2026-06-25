@@ -28,13 +28,13 @@ impl LLMInvoiceParser {
     {
         async move {
             let key = ocr_result.key().to_string();
-            let content = ocr_result
-                .raw_content()
-                .map_err(|e| Error::Parsing(e.to_string()))?;
+            let content = ocr_result.raw_content()?;
+            if content.trim().is_empty() {
+                return Err(Error::EmptyOcrContent);
+            }
 
-            let extracted: ExtractedInvoiceList = client
-                .extract(EXTRACTION_PREAMBLE, &content)
-                .await?;
+            let extracted: ExtractedInvoiceList =
+                client.extract(EXTRACTION_PREAMBLE, &content).await?;
 
             Ok(extracted.into_parsed_invoices(key))
         }

@@ -8,6 +8,7 @@ pub use config::{Config, config};
 
 use std::{net::SocketAddr, sync::Arc};
 
+use crate::services::error::Result as ServiceResult;
 use axum::{Router, serve::Serve};
 use tokio::net::TcpListener;
 
@@ -19,7 +20,7 @@ pub struct App {
 }
 
 impl App {
-    pub async fn build(addr: SocketAddr, public_dir: &str) -> std::io::Result<Self> {
+    pub async fn build(addr: SocketAddr, public_dir: &str) -> ServiceResult<Self> {
         let state = Arc::new(
             AppState::new(
                 "testfiles/samples",

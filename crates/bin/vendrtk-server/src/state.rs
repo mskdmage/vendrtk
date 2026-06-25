@@ -1,5 +1,6 @@
 use tokio::sync::Mutex;
 
+use crate::services::error::Result;
 use crate::services::vendor_reconciliation::VendorReconciliationService;
 
 pub struct AppState {
@@ -12,7 +13,7 @@ impl AppState {
         ocr_dir: &str,
         parsed_invoices_dir: &str,
         parsed_sows_dir: &str,
-    ) -> std::io::Result<Self> {
+    ) -> Result<Self> {
         Ok(Self {
             vendor_reconciliation_service: Mutex::new(
                 VendorReconciliationService::new(

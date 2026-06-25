@@ -9,7 +9,6 @@ pub trait Store<T> {
     fn exists(&self, key: &str) -> Result<bool>;
 }
 
-
 pub trait ProcessedDocumentStore<P>: Store<LedgerEntry> {
     fn save(&mut self, payload: P) -> Result<()>;
     fn load_payload(&self, key: &str) -> Result<Option<P>>;

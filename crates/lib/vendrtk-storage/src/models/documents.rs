@@ -9,8 +9,8 @@ use crate::{
 };
 
 mod serde_path {
-    use std::path::PathBuf;
     use serde::{Deserialize, Deserializer, Serializer};
+    use std::path::PathBuf;
 
     pub fn serialize<S: Serializer>(path: &PathBuf, s: S) -> Result<S::Ok, S::Error> {
         s.serialize_str(&path.to_string_lossy().replace('\\', "/"))
@@ -68,10 +68,9 @@ fn validate_pdf_path(path: &Path) -> Result<()> {
     {
         Ok(())
     } else {
-        Err(Error::InvalidDocument(format!(
-            "expected .pdf file: {}",
-            path.display()
-        )))
+        Err(Error::InvalidExtension {
+            path: path.to_path_buf(),
+        })
     }
 }
 
@@ -79,9 +78,7 @@ fn validate_pdf_bytes(bytes: &[u8]) -> Result<()> {
     if bytes.starts_with(b"%PDF") {
         Ok(())
     } else {
-        Err(Error::InvalidDocument(
-            "expected pdf content starting with %PDF".into(),
-        ))
+        Err(Error::InvalidMagicBytes)
     }
 }
 
@@ -111,23 +108,22 @@ mod tests {
 
     #[test]
     fn pdf_from_bytes_rejects_non_pdf_extension() {
-        let err = pdf_from_bytes("uploads/invoice.txt", b"%PDF-1.4")
-            .unwrap_err();
+        let err = pdf_from_bytes("uploads/invoice.txt", b"%PDF-1.4").unwrap_err();
 
-        assert!(matches!(err, Error::InvalidDocument(_)));
+        assert!(matches!(err, Error::InvalidExtension { path: _ }));
     }
 
     #[test]
     fn pdf_from_bytes_rejects_missing_extension() {
         let err = pdf_from_bytes("uploads/invoice", b"%PDF-1.4").unwrap_err();
 
-        assert!(matches!(err, Error::InvalidDocument(_)));
+        assert!(matches!(err, Error::InvalidExtension { path: _ }));
     }
 
     #[test]
     fn pdf_from_bytes_rejects_invalid_pdf_content() {
         let err = pdf_from_bytes("uploads/invoice.pdf", b"not a pdf").unwrap_err();
 
-        assert!(matches!(err, Error::InvalidDocument(_)));
+        assert!(matches!(err, Error::InvalidMagicBytes));
     }
 }

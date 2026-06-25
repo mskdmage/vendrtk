@@ -26,7 +26,10 @@ impl<T> LocalParsedStore<T> {
         let store_root = path.as_ref().to_path_buf();
         let ledger_path = store_root.join(".ledger.json");
 
-        DirBuilder::new().recursive(true).create(&store_root).map_err(Error::Io)?;
+        DirBuilder::new()
+            .recursive(true)
+            .create(&store_root)
+            .map_err(Error::Io)?;
 
         if !ledger_path.exists() {
             std::fs::write(&ledger_path, "{}").map_err(Error::Io)?;
@@ -35,7 +38,12 @@ impl<T> LocalParsedStore<T> {
         let ledger = Self::load_ledger(&ledger_path)?;
         debug!("Loaded {} parsed entries from ledger.", ledger.len());
 
-        Ok(Self { store_root, ledger_path, ledger, _marker: PhantomData })
+        Ok(Self {
+            store_root,
+            ledger_path,
+            ledger,
+            _marker: PhantomData,
+        })
     }
 
     fn load_ledger(path: &PathBuf) -> Result<HashMap<String, LedgerEntry>> {
@@ -105,14 +113,23 @@ where
         let key = payload.key().to_string();
         let now = Utc::now();
         let entry = match self.ledger.get(&key) {
-            Some(e) => LedgerEntry { key: key.clone(), created_at: e.created_at, updated_at: now },
-            None    => LedgerEntry { key: key.clone(), created_at: now, updated_at: now },
+            Some(e) => LedgerEntry {
+                key: key.clone(),
+                created_at: e.created_at,
+                updated_at: now,
+            },
+            None => LedgerEntry {
+                key: key.clone(),
+                created_at: now,
+                updated_at: now,
+            },
         };
         debug!("Saving parsed payload: {key}");
         std::fs::write(
             self.payload_path(&key),
             serde_json::to_string_pretty(&payload).map_err(Error::Json)?,
-        ).map_err(Error::Io)?;
+        )
+        .map_err(Error::Io)?;
         self.ledger.insert(key, entry);
         self.save_ledger()
     }
@@ -129,7 +146,10 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::{path::PathBuf, time::{SystemTime, UNIX_EPOCH}};
+    use std::{
+        path::PathBuf,
+        time::{SystemTime, UNIX_EPOCH},
+    };
     use vendrtk_parsers::traits::parsed_document::{ParsedDocument, ParsedPayload};
 
     #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -153,17 +173,32 @@ mod tests {
     struct TempDir(PathBuf);
     impl TempDir {
         fn new(label: &str) -> Self {
-            let unique = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
-            let path = std::env::temp_dir().join(format!("vendrtk-parsed-{label}-{}-{unique}", std::process::id()));
+            let unique = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_nanos();
+            let path = std::env::temp_dir().join(format!(
+                "vendrtk-parsed-{label}-{}-{unique}",
+                std::process::id()
+            ));
             std::fs::create_dir_all(&path).unwrap();
             Self(path)
         }
-        fn path(&self) -> &std::path::Path { &self.0 }
+        fn path(&self) -> &std::path::Path {
+            &self.0
+        }
     }
-    impl Drop for TempDir { fn drop(&mut self) { let _ = std::fs::remove_dir_all(&self.0); } }
+    impl Drop for TempDir {
+        fn drop(&mut self) {
+            let _ = std::fs::remove_dir_all(&self.0);
+        }
+    }
 
     fn sample(id: &str) -> TestParsedDoc {
-        TestParsedDoc { id: id.into(), items: vec![format!("item-{id}")] }
+        TestParsedDoc {
+            id: id.into(),
+            items: vec![format!("item-{id}")],
+        }
     }
 
     #[test]
@@ -198,7 +233,10 @@ mod tests {
     fn entries_persist_across_store_reopen() {
         let dir = TempDir::new("persist");
         let doc = sample("parsed-001");
-        { let mut s = LocalParsedStore::new(dir.path()).unwrap(); s.save(doc.clone()).unwrap(); }
+        {
+            let mut s = LocalParsedStore::new(dir.path()).unwrap();
+            s.save(doc.clone()).unwrap();
+        }
         let store = LocalParsedStore::new(dir.path()).unwrap();
         assert_eq!(store.load_payload("parsed-001").unwrap(), Some(doc));
     }

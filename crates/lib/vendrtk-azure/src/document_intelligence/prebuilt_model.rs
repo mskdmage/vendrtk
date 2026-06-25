@@ -1,7 +1,7 @@
 pub enum PrebuiltModel {
     Layout,
     Invoice,
-    Contract
+    Contract,
 }
 
 impl AsRef<str> for PrebuiltModel {

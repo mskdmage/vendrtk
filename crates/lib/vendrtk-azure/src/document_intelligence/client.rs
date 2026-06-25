@@ -1,26 +1,23 @@
 use std::sync::Arc;
 
-use base64::engine::general_purpose::STANDARD;
 use base64::Engine;
-use reqwest::header::{HeaderMap, HeaderName, HeaderValue, AUTHORIZATION};
+use base64::engine::general_purpose::STANDARD;
+use reqwest::header::{AUTHORIZATION, HeaderMap, HeaderName, HeaderValue};
 use reqwest::{Client as HttpClient, Response, StatusCode};
 use serde_json::json;
 use std::path::Path;
 
-use crate::error::Error;
-use crate::error::Result;
+use crate::auth::{Auth, Credential};
 use crate::document_intelligence::api_version::ApiVersion;
 use crate::document_intelligence::config::Config;
 use crate::document_intelligence::models::AnalyzeOperationResponse;
 use crate::document_intelligence::prebuilt_model::PrebuiltModel;
-use crate::auth::{Auth, Credential};
+use crate::error::{Error, Result};
+use vendrtk_ocr::error::{Error as OCRError, Result as OCRResult};
 use vendrtk_ocr::traits::client::OCRClient;
-use vendrtk_ocr::error::Result as OCRResult;
-use vendrtk_ocr::error::Error as OCRError;
 
 const COGNITIVE_SERVICES_SCOPE: &str = "https://cognitiveservices.azure.com/.default";
-const SUBSCRIPTION_KEY_HEADER: HeaderName =
-    HeaderName::from_static("ocp-apim-subscription-key");
+const SUBSCRIPTION_KEY_HEADER: HeaderName = HeaderName::from_static("ocp-apim-subscription-key");
 
 pub struct DocumentIntelligenceClient {
     http_client: HttpClient,
@@ -36,31 +33,37 @@ impl DocumentIntelligenceClient {
         api_version: ApiVersion,
         auth: Auth,
         config: Config,
-    ) -> Self {
-        Self {
+    ) -> Result<Self> {
+        let endpoint = endpoint.trim_end_matches('/').to_string();
+        if endpoint.is_empty() {
+            return Err(Error::Config(
+                "AZURE_COGNITIVE_SERVICES_ENDPOINT is not set".into(),
+            ));
+        }
+
+        Ok(Self {
             http_client: HttpClient::new(),
-            endpoint: endpoint.trim_end_matches('/').to_string(),
+            endpoint,
             api_version,
             auth,
             config,
-        }
+        })
     }
 
     pub fn from_env(config: Option<Config>) -> Result<Self> {
-        let endpoint = std::env::var("AZURE_COGNITIVE_SERVICES_ENDPOINT").map_err(|_| {
-            Error::Azure("AZURE_COGNITIVE_SERVICES_ENDPOINT is not set".into())
-        })?;
+        let endpoint = std::env::var("AZURE_COGNITIVE_SERVICES_ENDPOINT")
+            .map_err(|_| Error::Config("AZURE_COGNITIVE_SERVICES_ENDPOINT is not set".into()))?;
 
         let auth = if let Ok(key) = std::env::var("AZURE_COGNITIVE_SERVICES_KEY") {
             Auth::ApiKey(key)
         } else {
-            Auth::Credential(Arc::new(
-                Credential::new(None, None, None).map_err(|e| {
-                    Error::Azure(format!(
+            Auth::Credential(Arc::new(Credential::new(None, None, None).map_err(
+                |e| {
+                    Error::Auth(format!(
                         "set AZURE_COGNITIVE_SERVICES_KEY or use Entra (az login): {e}"
                     ))
-                })?,
-            ))
+                },
+            )?))
         };
 
         Ok(Self::new(
@@ -68,14 +71,14 @@ impl DocumentIntelligenceClient {
             ApiVersion::Default,
             auth,
             config.unwrap_or_default(),
-        ))
+        )?)
     }
 
     pub fn with_api_key(
         endpoint: impl Into<String>,
         api_key: impl Into<String>,
         config: Option<Config>,
-    ) -> Self {
+    ) -> Result<Self> {
         Self::new(
             endpoint.into(),
             ApiVersion::Default,
@@ -88,7 +91,7 @@ impl DocumentIntelligenceClient {
         endpoint: impl Into<String>,
         credential: Credential,
         config: Option<Config>,
-    ) -> Self {
+    ) -> Result<Self> {
         Self::new(
             endpoint.into(),
             ApiVersion::Default,
@@ -103,7 +106,7 @@ impl DocumentIntelligenceClient {
                 headers.insert(
                     SUBSCRIPTION_KEY_HEADER,
                     HeaderValue::from_str(key)
-                        .map_err(|e| Error::Azure(format!("invalid API key: {e}")))?,
+                        .map_err(|e| Error::Auth(format!("invalid API key: {e}")))?,
                 );
             }
             Auth::Credential(credential) => {
@@ -114,18 +117,14 @@ impl DocumentIntelligenceClient {
                 headers.insert(
                     AUTHORIZATION,
                     HeaderValue::from_str(&value)
-                        .map_err(|e| Error::Azure(format!("invalid bearer token: {e}")))?,
+                        .map_err(|e| Error::Auth(format!("invalid bearer token: {e}")))?,
                 );
             }
         }
         Ok(())
     }
 
-    async fn start_analyze(
-        &self,
-        model_id: &str,
-        body: serde_json::Value,
-    ) -> Result<String> {
+    async fn start_analyze(&self, model_id: &str, body: serde_json::Value) -> Result<String> {
         let url = format!(
             "{}/documentintelligence/documentModels/{}:analyze?api-version={}",
             self.endpoint,
@@ -143,7 +142,7 @@ impl DocumentIntelligenceClient {
             .json(&body)
             .send()
             .await
-            .map_err(|e| Error::Azure(e.to_string()))?;
+            .map_err(|e| Error::request(format!("POST {url}"), e))?;
 
         let status = response.status();
         if status == StatusCode::ACCEPTED {
@@ -151,10 +150,10 @@ impl DocumentIntelligenceClient {
         }
 
         let message = response.text().await.unwrap_or_default();
-        Err(Error::Azure(format!(
-            "analyze request failed ({}): {message}",
-            status.as_u16()
-        )))
+        Err(Error::Api {
+            status: status.as_u16(),
+            message,
+        })
     }
 
     async fn poll_until_done(&self, operation_url: &str) -> Result<AnalyzeOperationResponse> {
@@ -168,21 +167,21 @@ impl DocumentIntelligenceClient {
                 .headers(headers)
                 .send()
                 .await
-                .map_err(|e| Error::Azure(e.to_string()))?;
+                .map_err(|e| Error::request(format!("GET {operation_url}"), e))?;
 
             let status = response.status();
             if !status.is_success() {
                 let message = response.text().await.unwrap_or_default();
-                return Err(Error::Azure(format!(
-                    "poll failed ({}): {message}",
-                    status.as_u16()
-                )));
+                return Err(Error::Api {
+                    status: status.as_u16(),
+                    message,
+                });
             }
 
             let body: AnalyzeOperationResponse = response
                 .json()
                 .await
-                .map_err(|e| Error::Azure(e.to_string()))?;
+                .map_err(|e| Error::request(format!("decode poll response from {operation_url}"), e))?;
 
             match body.status.as_str() {
                 "succeeded" => return Ok(body),
@@ -191,24 +190,21 @@ impl DocumentIntelligenceClient {
                         .error
                         .and_then(|e| e.message)
                         .unwrap_or_else(|| "analyze operation failed".into());
-                    return Err(Error::Azure(message));
+                    return Err(Error::AnalyzeFailed(message));
                 }
                 _ => tokio::time::sleep(self.config.interval()).await,
             }
         }
 
-        Err(Error::Azure(format!(
-            "analyze operation timed out after {} attempts",
-            self.config.max_attempts()
-        )))
+        Err(Error::PollTimeout {
+            attempts: self.config.max_attempts(),
+        })
     }
-
 }
 
 impl OCRClient<AnalyzeOperationResponse> for DocumentIntelligenceClient {
     async fn analyze_path(&self, path: &Path) -> OCRResult<AnalyzeOperationResponse> {
-        let bytes = std::fs::read(path)
-            .map_err(|e| OCRError::Client(format!("read {}: {e}", path.display())))?;
+        let bytes = std::fs::read(path)?;
         self.analyze_bytes(&bytes).await
     }
 
@@ -222,8 +218,8 @@ impl OCRClient<AnalyzeOperationResponse> for DocumentIntelligenceClient {
         let body = json!({ "base64Source": STANDARD.encode(bytes) });
         let operation_url = self
             .start_analyze(PrebuiltModel::Invoice.as_ref(), body)
-            .await.map_err(|e| OCRError::Client(e.to_string()))?;
-        let result = self.poll_until_done(&operation_url).await.map_err(|e| OCRError::Client(e.to_string()))?;
+            .await?;
+        let result = self.poll_until_done(&operation_url).await?;
 
         let page_count = result
             .analyze_result
@@ -240,10 +236,16 @@ impl OCRClient<AnalyzeOperationResponse> for DocumentIntelligenceClient {
     }
 }
 
+impl From<Error> for OCRError {
+    fn from(value: Error) -> Self {
+        OCRError::Service(value.to_string())
+    }
+}
+
 fn operation_location(headers: &HeaderMap) -> Result<String> {
     headers
         .get("operation-location")
         .and_then(|value| value.to_str().ok())
         .map(str::to_string)
-        .ok_or_else(|| Error::Azure("missing Operation-Location header".into()))
+        .ok_or_else(|| Error::MissingHeader("operation-location".into()))
 }

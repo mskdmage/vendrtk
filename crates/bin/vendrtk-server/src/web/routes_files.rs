@@ -1,14 +1,14 @@
 use axum::{
     Json, Router,
-    extract::{State, Multipart},
+    extract::{Multipart, State},
     routing,
 };
 use tracing::info;
 use vendrtk_core::parsers::models::{ParsedInvoices, ParsedSoWs};
 
-use std::sync::Arc;
 use crate::state::AppState;
 use crate::web::error::{Error, Result};
+use std::sync::Arc;
 
 pub fn routes(state: Arc<AppState>) -> Router {
     Router::new()
@@ -29,8 +29,7 @@ async fn upload_invoice_handler(
         .lock()
         .await
         .save_pdf(&filename, &bytes)
-        .await
-        .map_err(|e| Error::BadRequest(e.to_string()))?;
+        .await?;
 
     Ok(Json(parsed))
 }
@@ -47,8 +46,7 @@ async fn upload_sow_handler(
         .lock()
         .await
         .save_sow_pdf(&filename, &bytes)
-        .await
-        .map_err(|e| Error::BadRequest(e.to_string()))?;
+        .await?;
 
     Ok(Json(parsed))
 }

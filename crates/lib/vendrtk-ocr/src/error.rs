@@ -1,16 +1,13 @@
 pub type Result<T> = core::result::Result<T, Error>;
 
-#[derive(Debug)]
+#[derive(Debug, thiserror::Error)]
 pub enum Error {
-    Client(String),
-}
+    #[error("io error: {0}")]
+    Io(#[from] std::io::Error),
 
-impl core::fmt::Display for Error {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        match self {
-            Self::Client(source) => write!(f, "client error: {source}"),
-        }
-    }
-}
+    #[error("OCR service error: {0}")]
+    Service(String),
 
-impl std::error::Error for Error {}
+    #[error("invalid or missing OCR result")]
+    InvalidResult,
+}

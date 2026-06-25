@@ -1,18 +1,16 @@
 pub type Result<T> = core::result::Result<T, Error>;
 
-#[derive(Debug)]
+#[derive(Debug, thiserror::Error)]
 pub enum Error {
-    Parsing(String),
-    Client(String),
-}
+    #[error("empty OCR content")]
+    EmptyOcrContent,
 
-impl core::fmt::Display for Error {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        match self {
-            Self::Parsing(source) => write!(f, "parsing error: {source}"),
-            Self::Client(source) => write!(f, "client error: {source}"),
-        }
-    }
-}
+    #[error("schema validation failed: {details}")]
+    SchemaValidation { details: String },
 
-impl std::error::Error for Error {}
+    #[error("LLM request failed: {0}")]
+    LlmRequestFailed(String),
+
+    #[error(transparent)]
+    Ocr(#[from] vendrtk_ocr::error::Error),
+}

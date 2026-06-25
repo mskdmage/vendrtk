@@ -7578,6 +7578,7 @@ dependencies = [
  "schemars 1.2.1",
  "serde",
  "serde_json",
+ "thiserror",
  "tokio",
  "tracing",
  "vendrtk-ocr",
@@ -7599,6 +7600,7 @@ name = "vendrtk-ocr"
 version = "0.1.0"
 dependencies = [
  "chrono",
+ "thiserror",
  "tokio",
  "tracing",
 ]
@@ -7610,6 +7612,7 @@ dependencies = [
  "schemars 1.2.1",
  "serde",
  "serde_json",
+ "thiserror",
  "tokio",
  "vendrtk-ocr",
 ]
@@ -7618,18 +7621,22 @@ dependencies = [
 name = "vendrtk-server"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "axum",
  "chrono",
  "reqwest 0.13.4",
  "serde",
  "serde_json",
+ "thiserror",
  "tokio",
  "tower-http 0.7.0",
  "tracing",
  "tracing-subscriber",
  "uuid",
+ "vendrtk-azure",
  "vendrtk-core",
+ "vendrtk-ocr",
+ "vendrtk-parsers",
+ "vendrtk-storage",
 ]
 
 [[package]]
@@ -7641,6 +7648,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2 0.11.0",
+ "thiserror",
  "tracing",
  "vendrtk-azure",
  "vendrtk-ocr",

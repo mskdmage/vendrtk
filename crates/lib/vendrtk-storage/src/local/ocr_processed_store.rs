@@ -27,7 +27,10 @@ impl<T: OcrProcessedDocument> LocalOcrProcessedStore<T> {
         let store_root = path.as_ref().to_path_buf();
         let ledger_path = store_root.join(".ledger.json");
 
-        DirBuilder::new().recursive(true).create(&store_root).map_err(Error::Io)?;
+        DirBuilder::new()
+            .recursive(true)
+            .create(&store_root)
+            .map_err(Error::Io)?;
 
         if !ledger_path.exists() {
             std::fs::write(&ledger_path, "{}").map_err(Error::Io)?;
@@ -36,7 +39,12 @@ impl<T: OcrProcessedDocument> LocalOcrProcessedStore<T> {
         let ledger = Self::load_ledger(&ledger_path)?;
         debug!("Loaded {} OCR entries from ledger.", ledger.len());
 
-        Ok(Self { store_root, ledger_path, ledger, _marker: PhantomData })
+        Ok(Self {
+            store_root,
+            ledger_path,
+            ledger,
+            _marker: PhantomData,
+        })
     }
 
     fn load_ledger(path: &PathBuf) -> Result<HashMap<String, LedgerEntry>> {
@@ -106,14 +114,23 @@ where
         let key = payload.key().to_string();
         let now = Utc::now();
         let entry = match self.ledger.get(&key) {
-            Some(e) => LedgerEntry { key: key.clone(), created_at: e.created_at, updated_at: now },
-            None    => LedgerEntry { key: key.clone(), created_at: now, updated_at: now },
+            Some(e) => LedgerEntry {
+                key: key.clone(),
+                created_at: e.created_at,
+                updated_at: now,
+            },
+            None => LedgerEntry {
+                key: key.clone(),
+                created_at: now,
+                updated_at: now,
+            },
         };
         debug!("Saving OCR payload: {key}");
         std::fs::write(
             self.payload_path(&key),
             serde_json::to_string_pretty(&payload).map_err(Error::Json)?,
-        ).map_err(Error::Io)?;
+        )
+        .map_err(Error::Io)?;
         self.ledger.insert(key, entry);
         self.save_ledger()
     }
@@ -130,30 +147,59 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::{path::PathBuf, time::{SystemTime, UNIX_EPOCH}};
+    use std::{
+        path::PathBuf,
+        time::{SystemTime, UNIX_EPOCH},
+    };
 
     #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-    struct TestOcrDoc { id: String, raw: String }
+    struct TestOcrDoc {
+        id: String,
+        raw: String,
+    }
 
     impl OcrProcessedDocument for TestOcrDoc {
-        fn key(&self) -> &str { &self.id }
-        fn raw_content(&self) -> vendrtk_ocr::error::Result<String> { Ok(self.raw.clone()) }
-        fn pages(&self) -> vendrtk_ocr::error::Result<Vec<String>> { Ok(vec![]) }
+        fn key(&self) -> &str {
+            &self.id
+        }
+        fn raw_content(&self) -> vendrtk_ocr::error::Result<String> {
+            Ok(self.raw.clone())
+        }
+        fn pages(&self) -> vendrtk_ocr::error::Result<Vec<String>> {
+            Ok(vec![])
+        }
     }
 
     struct TempDir(PathBuf);
     impl TempDir {
         fn new(label: &str) -> Self {
-            let unique = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
-            let path = std::env::temp_dir().join(format!("vendrtk-ocr-{label}-{}-{unique}", std::process::id()));
+            let unique = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_nanos();
+            let path = std::env::temp_dir().join(format!(
+                "vendrtk-ocr-{label}-{}-{unique}",
+                std::process::id()
+            ));
             std::fs::create_dir_all(&path).unwrap();
             Self(path)
         }
-        fn path(&self) -> &std::path::Path { &self.0 }
+        fn path(&self) -> &std::path::Path {
+            &self.0
+        }
     }
-    impl Drop for TempDir { fn drop(&mut self) { let _ = std::fs::remove_dir_all(&self.0); } }
+    impl Drop for TempDir {
+        fn drop(&mut self) {
+            let _ = std::fs::remove_dir_all(&self.0);
+        }
+    }
 
-    fn sample(id: &str) -> TestOcrDoc { TestOcrDoc { id: id.into(), raw: format!("raw {id}") } }
+    fn sample(id: &str) -> TestOcrDoc {
+        TestOcrDoc {
+            id: id.into(),
+            raw: format!("raw {id}"),
+        }
+    }
 
     #[test]
     fn new_creates_empty_store_with_ledger() {
@@ -170,7 +216,10 @@ mod tests {
         store.save(sample("fp-123")).unwrap();
         assert!(store.exists("fp-123").unwrap());
         assert!(dir.0.join("fp-123.json").is_file());
-        assert_eq!(store.load_payload("fp-123").unwrap(), Some(sample("fp-123")));
+        assert_eq!(
+            store.load_payload("fp-123").unwrap(),
+            Some(sample("fp-123"))
+        );
     }
 
     #[test]
@@ -180,7 +229,12 @@ mod tests {
         store.save(sample("fp-123")).unwrap();
         let created_at = store.get("fp-123").unwrap().unwrap().created_at;
         std::thread::sleep(std::time::Duration::from_millis(5));
-        store.save(TestOcrDoc { id: "fp-123".into(), raw: "updated".into() }).unwrap();
+        store
+            .save(TestOcrDoc {
+                id: "fp-123".into(),
+                raw: "updated".into(),
+            })
+            .unwrap();
         let entry = store.get("fp-123").unwrap().unwrap();
         assert_eq!(entry.created_at, created_at);
         assert!(entry.updated_at > created_at);
@@ -207,7 +261,10 @@ mod tests {
     fn entries_persist_across_store_reopen() {
         let dir = TempDir::new("persist");
         let doc = sample("fp-123");
-        { let mut s = LocalOcrProcessedStore::new(dir.path()).unwrap(); s.save(doc.clone()).unwrap(); }
+        {
+            let mut s = LocalOcrProcessedStore::new(dir.path()).unwrap();
+            s.save(doc.clone()).unwrap();
+        }
         let store = LocalOcrProcessedStore::new(dir.path()).unwrap();
         assert_eq!(store.load_payload("fp-123").unwrap(), Some(doc));
     }

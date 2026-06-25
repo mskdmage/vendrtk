@@ -6,20 +6,20 @@ pub mod storage {
     }
 
     pub mod models {
-        pub use vendrtk_storage::models::documents::{pdf_from_bytes, PdfDocument};
+        pub use vendrtk_storage::models::documents::{PdfDocument, pdf_from_bytes};
         pub use vendrtk_storage::models::ledger::LedgerEntry;
         pub use vendrtk_storage::models::ocr_processed_document::DocumentIntelligenceOcrProcessedDocument;
     }
 
     pub mod traits {
-        pub use vendrtk_storage::traits::store::{ProcessedDocumentStore, Store};
         pub use vendrtk_storage::traits::document::Document;
+        pub use vendrtk_storage::traits::store::{ProcessedDocumentStore, Store};
     }
 }
 
 pub mod azure {
     pub mod foundry {
-        pub use vendrtk_azure::foundry::client::{azure_openai_client, FoundryClient};
+        pub use vendrtk_azure::foundry::client::{FoundryClient, azure_openai_client};
     }
 }
 
@@ -30,11 +30,11 @@ pub mod ocr {
     }
 
     pub mod azure {
+        pub use vendrtk_azure::auth::{Auth, Credential};
+        pub use vendrtk_azure::document_intelligence::api_version::ApiVersion;
         pub use vendrtk_azure::document_intelligence::client::DocumentIntelligenceClient;
         pub use vendrtk_azure::document_intelligence::config::Config;
-        pub use vendrtk_azure::auth::{Auth, Credential};
         pub use vendrtk_azure::document_intelligence::models::AnalyzeOperationResponse;
-        pub use vendrtk_azure::document_intelligence::api_version::ApiVersion;
     }
 }
 
@@ -43,9 +43,7 @@ pub mod parsers {
         pub use vendrtk_parsers::models::invoice::{
             Invoice, InvoiceDetail, InvoiceHeader, ParsedInvoices,
         };
-        pub use vendrtk_parsers::models::sow::{
-            ParsedSoWs, SoW, SoWHeader, SoWRateLine,
-        };
+        pub use vendrtk_parsers::models::sow::{ParsedSoWs, SoW, SoWHeader, SoWRateLine};
     }
 
     pub mod traits {
@@ -61,9 +59,7 @@ pub mod parsers {
             };
         }
         pub mod sow {
-            pub use vendrtk_parsers::prebuilt::sow::llm::parser::{
-                LLMSoWParser, SampleSoWParser,
-            };
+            pub use vendrtk_parsers::prebuilt::sow::llm::parser::{LLMSoWParser, SampleSoWParser};
         }
     }
 }

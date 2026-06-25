@@ -8,13 +8,16 @@ async fn main() {
         .with_env_filter(config().log_level.as_str())
         .init();
 
-    App::build(
-        config().socket_addr(),
-        &config().public_dir,
-    )
-        .await
-        .expect("failed to build server")
-        .run()
-        .await
-        .expect("server failed");
+    let app = match App::build(config().socket_addr(), &config().public_dir).await {
+        Ok(app) => app,
+        Err(err) => {
+            eprintln!("failed to build server: {err}");
+            std::process::exit(1);
+        }
+    };
+
+    if let Err(err) = app.run().await {
+        eprintln!("server failed: {err}");
+        std::process::exit(1);
+    }
 }
