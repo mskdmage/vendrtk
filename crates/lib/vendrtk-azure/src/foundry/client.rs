@@ -58,7 +58,7 @@ impl LLMClient for FoundryClient {
             extractor
                 .extract(content)
                 .await
-                .map_err(|e| ParserError::Client(e.to_string()))
+                .map_err(|e| ParserError::LlmRequestFailed(e.to_string()))
         }
     }
 }
@@ -74,5 +74,5 @@ pub async fn azure_openai_client(endpoint: &str, api_version: &str) -> Result<az
         .azure_endpoint(endpoint.to_string())
         .api_version(api_version)
         .build()
-        .map_err(|e| Error::Azure(e.to_string()))
+        .map_err(|e| Error::Client(e.to_string()))
 }

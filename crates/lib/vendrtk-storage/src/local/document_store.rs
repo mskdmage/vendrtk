@@ -7,7 +7,7 @@ use tracing::debug;
 
 use crate::{
     error::{Error, Result},
-    models::documents::{pdf_from_bytes, PdfDocument},
+    models::documents::{PdfDocument, pdf_from_bytes},
     traits::{document::Document, store::Store},
 };
 
@@ -25,7 +25,10 @@ where
         let store_root = path.as_ref().to_path_buf();
         let ledger_path = store_root.join(".ledger.json");
 
-        DirBuilder::new().recursive(true).create(&store_root).map_err(Error::Io)?;
+        DirBuilder::new()
+            .recursive(true)
+            .create(&store_root)
+            .map_err(Error::Io)?;
 
         if !ledger_path.exists() {
             std::fs::write(&ledger_path, "{}").map_err(Error::Io)?;
@@ -34,7 +37,11 @@ where
         let ledger = Self::load_ledger(&ledger_path)?;
         debug!("Loaded {} entries from ledger.", ledger.len());
 
-        Ok(Self { store_root, ledger_path, ledger })
+        Ok(Self {
+            store_root,
+            ledger_path,
+            ledger,
+        })
     }
 
     fn load_ledger(path: &PathBuf) -> Result<HashMap<String, T>> {
@@ -124,17 +131,28 @@ mod tests {
     }
 
     impl Document for TestDoc {
-        fn key(&self) -> &str { &self.value }
-        fn path(&self) -> &Path { Path::new(&self.value) }
-        fn size(&self) -> u64 { self.value.len() as u64 }
-        fn extension(&self) -> &str { "txt" }
+        fn key(&self) -> &str {
+            &self.value
+        }
+        fn path(&self) -> &Path {
+            Path::new(&self.value)
+        }
+        fn size(&self) -> u64 {
+            self.value.len() as u64
+        }
+        fn extension(&self) -> &str {
+            "txt"
+        }
     }
 
     struct TempStoreDir(PathBuf);
 
     impl TempStoreDir {
         fn new(label: &str) -> Self {
-            let unique = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
+            let unique = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_nanos();
             let path = std::env::temp_dir().join(format!(
                 "vendrtk-storage-{label}-{}-{unique}",
                 std::process::id()
@@ -144,12 +162,16 @@ mod tests {
         }
 
         fn path(&self) -> &str {
-            self.0.to_str().expect("temp store path should be valid utf-8")
+            self.0
+                .to_str()
+                .expect("temp store path should be valid utf-8")
         }
     }
 
     impl Drop for TempStoreDir {
-        fn drop(&mut self) { let _ = std::fs::remove_dir_all(&self.0); }
+        fn drop(&mut self) {
+            let _ = std::fs::remove_dir_all(&self.0);
+        }
     }
 
     #[test]
@@ -166,7 +188,9 @@ mod tests {
     fn create_get_exists() {
         let dir = TempStoreDir::new("create");
         let mut store = LocalDocumentStore::new(dir.path()).unwrap();
-        let doc = TestDoc { value: "hello".into() };
+        let doc = TestDoc {
+            value: "hello".into(),
+        };
 
         store.create("doc-1", doc.clone()).unwrap();
 
@@ -179,12 +203,19 @@ mod tests {
     fn update_replaces_existing_and_returns_previous() {
         let dir = TempStoreDir::new("update");
         let mut store = LocalDocumentStore::new(dir.path()).unwrap();
-        let original = TestDoc { value: "original".into() };
-        let updated = TestDoc { value: "updated".into() };
+        let original = TestDoc {
+            value: "original".into(),
+        };
+        let updated = TestDoc {
+            value: "updated".into(),
+        };
 
         store.create("doc-1", original.clone()).unwrap();
 
-        assert_eq!(store.update("doc-1", updated.clone()).unwrap(), Some(original));
+        assert_eq!(
+            store.update("doc-1", updated.clone()).unwrap(),
+            Some(original)
+        );
         assert_eq!(store.get("doc-1").unwrap(), Some(updated.clone()));
         assert_eq!(store.update("missing", updated).unwrap(), None);
     }
@@ -193,7 +224,9 @@ mod tests {
     fn delete_removes_entry_and_returns_removed_value() {
         let dir = TempStoreDir::new("delete");
         let mut store = LocalDocumentStore::new(dir.path()).unwrap();
-        let doc = TestDoc { value: "goodbye".into() };
+        let doc = TestDoc {
+            value: "goodbye".into(),
+        };
 
         store.create("doc-1", doc.clone()).unwrap();
 
@@ -207,24 +240,50 @@ mod tests {
         let dir = TempStoreDir::new("list");
         let mut store = LocalDocumentStore::new(dir.path()).unwrap();
 
-        store.create("a", TestDoc { value: "first".into() }).unwrap();
-        store.create("b", TestDoc { value: "second".into() }).unwrap();
+        store
+            .create(
+                "a",
+                TestDoc {
+                    value: "first".into(),
+                },
+            )
+            .unwrap();
+        store
+            .create(
+                "b",
+                TestDoc {
+                    value: "second".into(),
+                },
+            )
+            .unwrap();
 
         let mut entries = store.list().unwrap();
         entries.sort_by(|l, r| l.value.cmp(&r.value));
 
-        assert_eq!(entries, vec![
-            TestDoc { value: "first".into() },
-            TestDoc { value: "second".into() },
-        ]);
+        assert_eq!(
+            entries,
+            vec![
+                TestDoc {
+                    value: "first".into()
+                },
+                TestDoc {
+                    value: "second".into()
+                },
+            ]
+        );
     }
 
     #[test]
     fn entries_persist_across_store_reopen() {
         let dir = TempStoreDir::new("persist");
-        let doc = TestDoc { value: "persisted".into() };
+        let doc = TestDoc {
+            value: "persisted".into(),
+        };
 
-        { let mut store = LocalDocumentStore::new(dir.path()).unwrap(); store.create("doc-1", doc.clone()).unwrap(); }
+        {
+            let mut store = LocalDocumentStore::new(dir.path()).unwrap();
+            store.create("doc-1", doc.clone()).unwrap();
+        }
 
         let store = LocalDocumentStore::new(dir.path()).unwrap();
         assert_eq!(store.get("doc-1").unwrap(), Some(doc));

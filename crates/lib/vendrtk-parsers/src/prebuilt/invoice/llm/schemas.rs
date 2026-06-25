@@ -30,10 +30,7 @@ pub struct ExtractedInvoiceHeader {
     )]
     pub vendor_name: String,
 
-    #[schemars(
-        title = "Invoice Number",
-        description = "Number of the invoice."
-    )]
+    #[schemars(title = "Invoice Number", description = "Number of the invoice.")]
     pub invoice_number: String,
 
     #[schemars(

@@ -7626,12 +7626,17 @@ dependencies = [
  "reqwest 0.13.4",
  "serde",
  "serde_json",
+ "thiserror",
  "tokio",
  "tower-http 0.7.0",
  "tracing",
  "tracing-subscriber",
  "uuid",
+ "vendrtk-azure",
  "vendrtk-core",
+ "vendrtk-ocr",
+ "vendrtk-parsers",
+ "vendrtk-storage",
 ]
 
 [[package]]

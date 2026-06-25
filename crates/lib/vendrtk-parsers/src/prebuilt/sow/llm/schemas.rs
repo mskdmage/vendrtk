@@ -37,7 +37,10 @@ pub struct ExtractedSowHeader {
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 pub struct ExtractedSowRateLine {
-    #[schemars(title = "Service Name", description = "Billable service label from the rate table.")]
+    #[schemars(
+        title = "Service Name",
+        description = "Billable service label from the rate table."
+    )]
     pub service_name: String,
 
     #[schemars(
@@ -52,10 +55,16 @@ pub struct ExtractedSowRateLine {
     )]
     pub rate: Option<f64>,
 
-    #[schemars(title = "Rate Range Min", description = "Minimum unit price when is_rate_range is true.")]
+    #[schemars(
+        title = "Rate Range Min",
+        description = "Minimum unit price when is_rate_range is true."
+    )]
     pub rate_range_min: Option<f64>,
 
-    #[schemars(title = "Rate Range Max", description = "Maximum unit price when is_rate_range is true.")]
+    #[schemars(
+        title = "Rate Range Max",
+        description = "Maximum unit price when is_rate_range is true."
+    )]
     pub rate_range_max: Option<f64>,
 
     #[schemars(

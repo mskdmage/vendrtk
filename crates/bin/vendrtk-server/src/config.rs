@@ -57,11 +57,16 @@ impl Config {
 
             log_level: env::var("LOG_LEVEL").unwrap_or(defaults.log_level),
 
-            azure_cognitive_services_endpoint: env::var("AZURE_COGNITIVE_SERVICES_ENDPOINT").unwrap_or(defaults.azure_cognitive_services_endpoint),
-            azure_cognitive_services_key: env::var("AZURE_COGNITIVE_SERVICES_KEY").unwrap_or(defaults.azure_cognitive_services_key),
-            azure_openai_endpoint: env::var("AZURE_OPENAI_ENDPOINT").unwrap_or(defaults.azure_openai_endpoint),
-            azure_openai_deployment: env::var("AZURE_OPENAI_DEPLOYMENT").unwrap_or(defaults.azure_openai_deployment),
-            azure_openai_api_version: env::var("AZURE_OPENAI_API_VERSION").unwrap_or(defaults.azure_openai_api_version),
+            azure_cognitive_services_endpoint: env::var("AZURE_COGNITIVE_SERVICES_ENDPOINT")
+                .unwrap_or(defaults.azure_cognitive_services_endpoint),
+            azure_cognitive_services_key: env::var("AZURE_COGNITIVE_SERVICES_KEY")
+                .unwrap_or(defaults.azure_cognitive_services_key),
+            azure_openai_endpoint: env::var("AZURE_OPENAI_ENDPOINT")
+                .unwrap_or(defaults.azure_openai_endpoint),
+            azure_openai_deployment: env::var("AZURE_OPENAI_DEPLOYMENT")
+                .unwrap_or(defaults.azure_openai_deployment),
+            azure_openai_api_version: env::var("AZURE_OPENAI_API_VERSION")
+                .unwrap_or(defaults.azure_openai_api_version),
         }
     }
 

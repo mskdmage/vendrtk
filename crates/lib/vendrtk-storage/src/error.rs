@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 pub type Result<T> = core::result::Result<T, Error>;
 
 #[derive(Debug, thiserror::Error)]
@@ -11,6 +13,9 @@ pub enum Error {
     #[error("not found: {0}")]
     NotFound(String),
 
-    #[error("invalid document: {0}")]
-    InvalidDocument(String),
+    #[error("invalid extension: {path}")]
+    InvalidExtension { path: PathBuf },
+
+    #[error("invalid magic bytes")]
+    InvalidMagicBytes,
 }

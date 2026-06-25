@@ -1,6 +1,6 @@
-use std::sync::Arc;
+use crate::error::{Error, Result};
 use azure_core::credentials::{AccessToken, TokenCredential, TokenRequestOptions};
-use crate::error::{Result, Error};
+use std::sync::Arc;
 
 #[derive(Clone)]
 pub enum Auth {
@@ -20,7 +20,7 @@ impl Credential {
         if let (Some(t), Some(c), Some(s)) = (tenant_id, client_id, secret) {
             return Ok(Self(
                 azure_identity::ClientSecretCredential::new(&t, c, s.into(), None).map_err(
-                    |_| Error::Azure("Unable to authenticate using client secret.".into()),
+                    |_| Error::Auth("Unable to authenticate using client secret.".into()),
                 )?,
             ));
         }
@@ -35,7 +35,7 @@ impl Credential {
             }
         }
 
-        Err(Error::Azure(
+        Err(Error::Auth(
             "Unable to authenticate (tried developer tools). Use az login or set tenant/client/secret."
                 .into(),
         ))
@@ -53,6 +53,6 @@ impl Credential {
         self.0
             .get_token(auth_scopes, options)
             .await
-            .map_err(|e| Error::Azure(format!("Could not retrieve token: {e}")))
+            .map_err(|e| Error::Auth(format!("Could not retrieve token: {e}")))
     }
 }
