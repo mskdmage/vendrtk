@@ -20,7 +20,7 @@ impl Credential {
         if let (Some(t), Some(c), Some(s)) = (tenant_id, client_id, secret) {
             return Ok(Self(
                 azure_identity::ClientSecretCredential::new(&t, c, s.into(), None).map_err(
-                    |_| Error::Client("Unable to authenticate using client secret.".into()),
+                    |_| Error::Azure("Unable to authenticate using client secret.".into()),
                 )?,
             ));
         }
@@ -35,7 +35,7 @@ impl Credential {
             }
         }
 
-        Err(Error::Client(
+        Err(Error::Azure(
             "Unable to authenticate (tried developer tools). Use az login or set tenant/client/secret."
                 .into(),
         ))
@@ -53,6 +53,6 @@ impl Credential {
         self.0
             .get_token(auth_scopes, options)
             .await
-            .map_err(|e| Error::Client(format!("Could not retrieve token: {e}")))
+            .map_err(|e| Error::Azure(format!("Could not retrieve token: {e}")))
     }
 }

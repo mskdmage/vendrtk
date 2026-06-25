@@ -17,6 +17,12 @@ pub mod storage {
     }
 }
 
+pub mod azure {
+    pub mod foundry {
+        pub use vendrtk_azure::foundry::client::{azure_openai_client, FoundryClient};
+    }
+}
+
 pub mod ocr {
     pub mod traits {
         pub use vendrtk_ocr::traits::client::OCRClient;
@@ -24,11 +30,11 @@ pub mod ocr {
     }
 
     pub mod azure {
-        pub use vendrtk_ocr::azure_document_intelligence::client::DocumentIntelligenceClient;
-        pub use vendrtk_ocr::azure_document_intelligence::config::Config;
-        pub use vendrtk_ocr::azure_document_intelligence::auth::{Auth, Credential};
-        pub use vendrtk_ocr::azure_document_intelligence::models::AnalyzeOperationResponse;
-        pub use vendrtk_ocr::azure_document_intelligence::api_version::ApiVersion;
+        pub use vendrtk_azure::document_intelligence::client::DocumentIntelligenceClient;
+        pub use vendrtk_azure::document_intelligence::config::Config;
+        pub use vendrtk_azure::auth::{Auth, Credential};
+        pub use vendrtk_azure::document_intelligence::models::AnalyzeOperationResponse;
+        pub use vendrtk_azure::document_intelligence::api_version::ApiVersion;
     }
 }
 
@@ -43,6 +49,7 @@ pub mod parsers {
     }
 
     pub mod traits {
+        pub use vendrtk_parsers::traits::llm_client::LLMClient;
         pub use vendrtk_parsers::traits::parsed_document::{ParsedDocument, ParsedPayload};
         pub use vendrtk_parsers::traits::parser::Parser;
     }

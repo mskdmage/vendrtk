@@ -7567,9 +7567,28 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ba73ea9cf16a25df0c8caa16c51acb937d5712a8429db78a3ee29d5dcacd3a65"
 
 [[package]]
+name = "vendrtk-azure"
+version = "0.1.0"
+dependencies = [
+ "azure_core",
+ "azure_identity",
+ "base64 0.22.1",
+ "reqwest 0.13.4",
+ "rig",
+ "schemars 1.2.1",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tracing",
+ "vendrtk-ocr",
+ "vendrtk-parsers",
+]
+
+[[package]]
 name = "vendrtk-core"
 version = "0.1.0"
 dependencies = [
+ "vendrtk-azure",
  "vendrtk-ocr",
  "vendrtk-parsers",
  "vendrtk-storage",
@@ -7579,13 +7598,7 @@ dependencies = [
 name = "vendrtk-ocr"
 version = "0.1.0"
 dependencies = [
- "azure_core",
- "azure_identity",
- "base64 0.22.1",
  "chrono",
- "reqwest 0.13.4",
- "serde",
- "serde_json",
  "tokio",
  "tracing",
 ]
@@ -7594,7 +7607,6 @@ dependencies = [
 name = "vendrtk-parsers"
 version = "0.1.0"
 dependencies = [
- "rig",
  "schemars 1.2.1",
  "serde",
  "serde_json",
@@ -7630,6 +7642,7 @@ dependencies = [
  "serde_json",
  "sha2 0.11.0",
  "tracing",
+ "vendrtk-azure",
  "vendrtk-ocr",
  "vendrtk-parsers",
 ]

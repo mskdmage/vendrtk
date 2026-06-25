@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use vendrtk_ocr::error::Result;
 use vendrtk_ocr::traits::ocr_processed_document::OcrProcessedDocument;
-use vendrtk_ocr::azure_document_intelligence::models::AnalyzeOperationResponse;
+use vendrtk_azure::document_intelligence::models::AnalyzeOperationResponse;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DocumentIntelligenceOcrProcessedDocument {
