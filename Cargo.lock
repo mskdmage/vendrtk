@@ -7618,6 +7618,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "vendrtk-pipelines"
+version = "0.1.0"
+
+[[package]]
 name = "vendrtk-server"
 version = "0.1.0"
 dependencies = [

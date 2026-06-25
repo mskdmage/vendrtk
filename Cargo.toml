@@ -8,7 +8,7 @@ members = [
     "crates/lib/vendrtk-storage",
     "crates/lib/vendrtk-ocr",
     "crates/lib/vendrtk-parsers",
-    "crates/lib/vendrtk-azure",
+    "crates/lib/vendrtk-azure", "crates/lib/vendrtk-pipelines",
 ]
 
 [profile.dev]
