@@ -1,22 +1,16 @@
 pub type Result<T> = core::result::Result<T, Error>;
 
-#[derive(Debug)]
+#[derive(Debug, thiserror::Error)]
 pub enum Error {
-    Io(std::io::Error),
-    Json(serde_json::Error),
+    #[error("io error: {0}")]
+    Io(#[from] std::io::Error),
+
+    #[error("json error: {0}")]
+    Json(#[from] serde_json::Error),
+
+    #[error("not found: {0}")]
     NotFound(String),
+
+    #[error("invalid document: {0}")]
     InvalidDocument(String),
 }
-
-impl core::fmt::Display for Error {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        match self {
-            Self::Io(source) => write!(f, "io error: {source}"),
-            Self::Json(source) => write!(f, "json error: {source}"),
-            Self::NotFound(identifier) => write!(f, "not found: {identifier}"),
-            Self::InvalidDocument(path) => write!(f, "invalid document: {path}"),
-        }
-    }
-}
-
-impl std::error::Error for Error {}

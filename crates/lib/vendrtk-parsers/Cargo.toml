@@ -8,6 +8,7 @@ schemars = "1.2.1"
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.150"
 vendrtk-ocr = { path = "../../lib/vendrtk-ocr" }
+thiserror = "2.0.18"
 
 [dev-dependencies]
 tokio = { version = "1.52", features = ["macros", "rt"] }

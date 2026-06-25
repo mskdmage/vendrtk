@@ -1,16 +1,7 @@
 pub type Result<T> = core::result::Result<T, Error>;
 
-#[derive(Debug)]
+#[derive(Debug, thiserror::Error)]
 pub enum Error {
+    #[error("azure error: {0}")]
     Azure(String),
 }
-
-impl core::fmt::Display for Error {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        match self {
-            Self::Azure(source) => write!(f, "azure error: {source}"),
-        }
-    }
-}
-
-impl std::error::Error for Error {}
