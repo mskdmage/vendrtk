@@ -19,8 +19,27 @@ impl TestClient {
         CLIENT.get_or_init(init).await
     }
 
-    pub async fn upload_file(
+    pub async fn upload_invoice(
         &self,
+        file_bytes: &[u8],
+        filename: &str,
+    ) -> reqwest::Result<reqwest::Response> {
+        self.upload_to("/api/files/upload/invoice", file_bytes, filename)
+            .await
+    }
+
+    pub async fn upload_sow(
+        &self,
+        file_bytes: &[u8],
+        filename: &str,
+    ) -> reqwest::Result<reqwest::Response> {
+        self.upload_to("/api/files/upload/sow", file_bytes, filename)
+            .await
+    }
+
+    async fn upload_to(
+        &self,
+        path: &str,
         file_bytes: &[u8],
         filename: &str,
     ) -> reqwest::Result<reqwest::Response> {
@@ -30,7 +49,7 @@ impl TestClient {
         );
 
         self.http
-            .post(format!("{}/api/files/upload", self.base_url))
+            .post(format!("{}{}", self.base_url, path))
             .multipart(form)
             .send()
             .await

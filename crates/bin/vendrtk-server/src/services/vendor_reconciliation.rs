@@ -7,6 +7,7 @@ use vendrtk_core::ocr::azure::{ApiVersion, Auth, Config, Credential, DocumentInt
 use vendrtk_core::ocr::traits::OCRClient;
 use vendrtk_core::parsers::models::{ParsedInvoices, ParsedSoWs};
 use vendrtk_core::parsers::prebuilt::invoice::SampleInvoiceParser;
+use vendrtk_core::parsers::prebuilt::sow::SampleSoWParser;
 use vendrtk_core::storage::local::{
     LocalDocumentStore, LocalOcrProcessedStore, LocalParsedStore,
 };
@@ -24,6 +25,7 @@ pub struct VendorReconciliationService {
     ocr_client: DocumentIntelligenceClient,
     llm_client: FoundryClient,
     invoice_parser: SampleInvoiceParser,
+    sow_parser: SampleSoWParser,
 }
 
 impl VendorReconciliationService {
@@ -61,6 +63,7 @@ impl VendorReconciliationService {
             ),
             llm_client,
             invoice_parser: SampleInvoiceParser::new(),
+            sow_parser: SampleSoWParser::new(),
         })
     }
 
@@ -69,6 +72,68 @@ impl VendorReconciliationService {
         filename: &str,
         bytes: &[u8],
     ) -> std::io::Result<ParsedInvoices> {
+        let (doc, ocr_doc) = self.stage_pdf(filename, bytes).await?;
+
+        let parsed_invoices = match self
+            .parsed_invoice_store
+            .load_payload(&doc.key)
+            .map_err(|e| std::io::Error::other(e.to_string()))?
+        {
+            Some(cached) => cached,
+            None => {
+                let parsed = self
+                    .invoice_parser
+                    .parse(&self.llm_client, ocr_doc.clone())
+                    .await
+                    .map_err(|e| std::io::Error::other(e.to_string()))?;
+
+                self.parsed_invoice_store
+                    .save(parsed.clone())
+                    .map_err(|e| std::io::Error::other(e.to_string()))?;
+
+                parsed
+            }
+        };
+
+        Ok(parsed_invoices)
+    }
+
+    pub async fn save_sow_pdf(
+        &mut self,
+        filename: &str,
+        bytes: &[u8],
+    ) -> std::io::Result<ParsedSoWs> {
+        let (doc, ocr_doc) = self.stage_pdf(filename, bytes).await?;
+
+        let parsed_sows = match self
+            .parsed_sow_store
+            .load_payload(&doc.key)
+            .map_err(|e| std::io::Error::other(e.to_string()))?
+        {
+            Some(cached) => cached,
+            None => {
+                let parsed = self
+                    .sow_parser
+                    .parse(&self.llm_client, ocr_doc.clone())
+                    .await
+                    .map_err(|e| std::io::Error::other(e.to_string()))?;
+
+                self.parsed_sow_store
+                    .save(parsed.clone())
+                    .map_err(|e| std::io::Error::other(e.to_string()))?;
+
+                parsed
+            }
+        };
+
+        Ok(parsed_sows)
+    }
+
+    async fn stage_pdf(
+        &mut self,
+        filename: &str,
+        bytes: &[u8],
+    ) -> std::io::Result<(PdfDocument, DocumentIntelligenceOcrProcessedDocument)> {
         let path = Path::new(&self.landing_dir).join(filename);
         std::fs::write(&path, bytes)?;
         self.landing_store
@@ -103,27 +168,6 @@ impl VendorReconciliationService {
             }
         };
 
-        let parsed_invoices = match self
-            .parsed_invoice_store
-            .load_payload(&doc.key)
-            .map_err(|e| std::io::Error::other(e.to_string()))?
-        {
-            Some(cached) => cached,
-            None => {
-                let parsed = self
-                    .invoice_parser
-                    .parse(&self.llm_client, ocr_doc.clone())
-                    .await
-                    .map_err(|e| std::io::Error::other(e.to_string()))?;
-
-                self.parsed_invoice_store
-                    .save(parsed.clone())
-                    .map_err(|e| std::io::Error::other(e.to_string()))?;
-
-                parsed
-            }
-        };
-
-        Ok(parsed_invoices)
+        Ok((doc, ocr_doc))
     }
 }
