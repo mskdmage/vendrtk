@@ -22,10 +22,9 @@ WHAT IS THIS?
 
 QUICK START
 -----------
-  1. Choose PARSE INVOICE or PARSE SOW below
-  2. Select a .PDF document
-  3. Press the matching upload button
-  4. Review the response data shown under OUTPUT
+  1. Select a .PDF document below
+  2. Press UPLOAD
+  3. Review the response data shown under OUTPUT
 
 SYSTEM REQUIREMENTS
 -------------------
@@ -34,15 +33,10 @@ SYSTEM REQUIREMENTS
 
 </pre>
 
-<nav style="margin-bottom: 16px;">
-    <button type="button" id="menu-invoice" aria-pressed="true">[ PARSE INVOICE ]</button>
-    <button type="button" id="menu-sow" aria-pressed="false">[ PARSE SOW ]</button>
-</nav>
-
-<form id="upload-form" action="/api/files/upload/invoice" method="post" enctype="multipart/form-data">
-    <p id="form-label">INVOICE FILE:</p>
+<form id="upload-form" action="/api/files/upload" method="post" enctype="multipart/form-data">
+    <p id="form-label">PDF FILE:</p>
     <input id="file" name="file" type="file" accept=".pdf,application/pdf" required>
-    <button type="submit" id="submit-button">[ UPLOAD INVOICE ]</button>
+    <button type="submit" id="submit-button">[ UPLOAD ]</button>
 </form>
 
 <p>STATUS: <span id="status">IDLE - awaiting file selection</span></p>
@@ -60,44 +54,6 @@ SYSTEM REQUIREMENTS
     const form = document.getElementById("upload-form");
     const status = document.getElementById("status");
     const output = document.getElementById("response");
-    const menuInvoice = document.getElementById("menu-invoice");
-    const menuSow = document.getElementById("menu-sow");
-    const formLabel = document.getElementById("form-label");
-    const submitButton = document.getElementById("submit-button");
-
-    const modes = {
-        invoice: {
-            action: "/api/files/upload/invoice",
-            label: "INVOICE FILE:",
-            button: "[ UPLOAD INVOICE ]",
-            idle: "IDLE - awaiting invoice selection",
-        },
-        sow: {
-            action: "/api/files/upload/sow",
-            label: "SOW FILE:",
-            button: "[ UPLOAD SOW ]",
-            idle: "IDLE - awaiting SOW selection",
-        },
-    };
-
-    let activeMode = "invoice";
-
-    function setMode(mode) {
-        activeMode = mode;
-        const config = modes[mode];
-
-        form.action = config.action;
-        formLabel.textContent = config.label;
-        submitButton.textContent = config.button;
-        status.textContent = config.idle;
-        output.textContent = "";
-
-        menuInvoice.setAttribute("aria-pressed", mode === "invoice" ? "true" : "false");
-        menuSow.setAttribute("aria-pressed", mode === "sow" ? "true" : "false");
-    }
-
-    menuInvoice.addEventListener("click", () => setMode("invoice"));
-    menuSow.addEventListener("click", () => setMode("sow"));
 
     form.addEventListener("submit", async (event) => {
         event.preventDefault();
@@ -114,8 +70,10 @@ SYSTEM REQUIREMENTS
         const response = await fetch(form.action, { method: "POST", body });
         const raw = await response.text();
 
+        let parsed;
         try {
-            output.textContent = JSON.stringify(JSON.parse(raw), null, 2);
+            parsed = JSON.parse(raw);
+            output.textContent = JSON.stringify(parsed, null, 2);
         } catch {
             output.textContent = raw;
         }
@@ -125,9 +83,8 @@ SYSTEM REQUIREMENTS
             return;
         }
 
-        status.textContent = activeMode === "invoice"
-            ? "COMPLETE - invoice parsed"
-            : "COMPLETE - SOW parsed";
+        const kind = parsed?.document_type ?? "document";
+        status.textContent = `COMPLETE - ${kind} parsed`;
     });
 </script>
 </body>

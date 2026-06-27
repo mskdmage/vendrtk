@@ -1,32 +1,36 @@
-use std::path::Path;
+use std::path::PathBuf;
 use std::sync::Arc;
 
 use tokio::sync::OnceCell;
 
 use crate::config::config;
 use crate::services::error::Result;
-use vendrtk_core::azure::foundry::FoundryClient;
-use vendrtk_core::ocr::azure::{ApiVersion, Auth, Config, Credential, DocumentIntelligenceClient};
-use vendrtk_core::ocr::traits::OCRClient;
-use vendrtk_core::parsers::models::{ParsedInvoices, ParsedSoWs};
-use vendrtk_core::parsers::prebuilt::invoice::SampleInvoiceParser;
-use vendrtk_core::parsers::prebuilt::sow::SampleSoWParser;
-use vendrtk_core::storage::local::{LocalDocumentStore, LocalOcrProcessedStore, LocalParsedStore};
-use vendrtk_core::storage::models::{
-    DocumentIntelligenceOcrProcessedDocument, PdfDocument, pdf_from_bytes,
+use vendrtk_azure::auth::{Auth, Credential};
+use vendrtk_azure::document_intelligence::api_version::ApiVersion;
+use vendrtk_azure::document_intelligence::client::DocumentIntelligenceClient;
+use vendrtk_azure::document_intelligence::config::Config;
+use vendrtk_azure::foundry::client::FoundryClient;
+use vendrtk_parsers::models::invoice::ParsedInvoices;
+use vendrtk_parsers::models::sow::ParsedSoWs;
+use vendrtk_storage::local::document_store::LocalDocumentStore;
+use vendrtk_storage::local::ocr_processed_store::LocalOcrProcessedStore;
+use vendrtk_storage::local::parsed_store::LocalParsedStore;
+use vendrtk_storage::models::documents::PdfDocument;
+use vendrtk_storage::models::ocr_processed_document::DocumentIntelligenceOcrProcessedDocument;
+use vendrtk_pipelines::prebuilt::vendor_reconciliation::context::VendorReconciliationContext;
+use vendrtk_pipelines::prebuilt::vendor_reconciliation::input::VendorReconciliationInput;
+use vendrtk_pipelines::prebuilt::vendor_reconciliation::output::VendorReconciliationOutput;
+use vendrtk_pipelines::prebuilt::vendor_reconciliation::pipeline::{
+    LocalVendorReconciliationPipeline, VendorReconciliationPipeline,
 };
-use vendrtk_core::storage::traits::ProcessedDocumentStore;
+use vendrtk_pipelines::traits::pipeline::Pipeline;
 
 pub struct VendorReconciliationService {
-    landing_dir: String,
-    landing_store: LocalDocumentStore<PdfDocument>,
-    processed_store: LocalOcrProcessedStore<DocumentIntelligenceOcrProcessedDocument>,
-    parsed_invoice_store: LocalParsedStore<ParsedInvoices>,
-    parsed_sow_store: LocalParsedStore<ParsedSoWs>,
-    ocr_client: OnceCell<DocumentIntelligenceClient>,
-    llm_client: OnceCell<FoundryClient>,
-    invoice_parser: SampleInvoiceParser,
-    sow_parser: SampleSoWParser,
+    landing_dir: PathBuf,
+    ocr_dir: PathBuf,
+    parsed_invoices_dir: PathBuf,
+    parsed_sows_dir: PathBuf,
+    pipeline: OnceCell<LocalVendorReconciliationPipeline>,
 }
 
 impl VendorReconciliationService {
@@ -37,21 +41,21 @@ impl VendorReconciliationService {
         parsed_sows_dir: &str,
     ) -> Result<Self> {
         Ok(Self {
-            landing_dir: landing_dir.to_string(),
-            landing_store: LocalDocumentStore::new(landing_dir)?,
-            processed_store: LocalOcrProcessedStore::new(ocr_dir)?,
-            parsed_invoice_store: LocalParsedStore::new(parsed_invoices_dir)?,
-            parsed_sow_store: LocalParsedStore::new(parsed_sows_dir)?,
-            ocr_client: OnceCell::new(),
-            llm_client: OnceCell::new(),
-            invoice_parser: SampleInvoiceParser::new(),
-            sow_parser: SampleSoWParser::new(),
+            landing_dir: landing_dir.into(),
+            ocr_dir: ocr_dir.into(),
+            parsed_invoices_dir: parsed_invoices_dir.into(),
+            parsed_sows_dir: parsed_sows_dir.into(),
+            pipeline: OnceCell::new(),
         })
     }
 
-    async fn ocr_client(&self) -> Result<&DocumentIntelligenceClient> {
-        if let Some(client) = self.ocr_client.get() {
-            return Ok(client);
+    pub async fn run(&mut self, input: VendorReconciliationInput) -> Result<VendorReconciliationOutput> {
+        Ok(self.pipeline().await?.run(input).await?)
+    }
+
+    async fn pipeline(&mut self) -> Result<&mut LocalVendorReconciliationPipeline> {
+        if self.pipeline.get().is_some() {
+            return Ok(self.pipeline.get_mut().expect("pipeline initialized"));
         }
 
         let cfg = config();
@@ -60,104 +64,36 @@ impl VendorReconciliationService {
         } else {
             Auth::ApiKey(cfg.azure_cognitive_services_key.clone())
         };
-        let client = DocumentIntelligenceClient::new(
-            cfg.azure_cognitive_services_endpoint.clone(),
-            ApiVersion::Default,
-            auth,
-            Config::default(),
-        )?;
 
-        let _ = self.ocr_client.set(client);
-        Ok(self.ocr_client.get().expect("ocr client just initialized"))
-    }
+        let document_store = LocalDocumentStore::<PdfDocument>::new(&self.landing_dir)?;
+        let ocr_store =
+            LocalOcrProcessedStore::<DocumentIntelligenceOcrProcessedDocument>::new(&self.ocr_dir)?;
+        let parsed_invoice_store =
+            LocalParsedStore::<ParsedInvoices>::new(&self.parsed_invoices_dir)?;
+        let parsed_sow_store = LocalParsedStore::<ParsedSoWs>::new(&self.parsed_sows_dir)?;
 
-    async fn llm_client(&self) -> Result<&FoundryClient> {
-        if let Some(client) = self.llm_client.get() {
-            return Ok(client);
-        }
+        let ctx = VendorReconciliationContext::new(
+            document_store,
+            ocr_store,
+            parsed_invoice_store,
+            parsed_sow_store,
+            DocumentIntelligenceClient::new(
+                cfg.azure_cognitive_services_endpoint.clone(),
+                ApiVersion::Default,
+                auth,
+                Config::default(),
+            )?,
+            FoundryClient::connect(
+                &cfg.azure_openai_endpoint,
+                &cfg.azure_openai_api_version,
+                cfg.azure_openai_deployment.clone(),
+            )
+            .await?,
+        );
 
-        let cfg = config();
-        let client = FoundryClient::connect(
-            &cfg.azure_openai_endpoint,
-            &cfg.azure_openai_api_version,
-            cfg.azure_openai_deployment.clone(),
-        )
-        .await?;
+        let pipeline = VendorReconciliationPipeline::new(ctx);
 
-        let _ = self.llm_client.set(client);
-        Ok(self.llm_client.get().expect("llm client just initialized"))
-    }
-
-    pub async fn save_pdf(&mut self, filename: &str, bytes: &[u8]) -> Result<ParsedInvoices> {
-        let (doc, ocr_doc) = self.stage_pdf(filename, bytes).await?;
-
-        let parsed_invoices = match self.parsed_invoice_store.load_payload(&doc.key)? {
-            Some(cached) => cached,
-            None => {
-                let llm = self.llm_client().await?;
-                let parsed = self
-                    .invoice_parser
-                    .parse(llm, ocr_doc.clone())
-                    .await?;
-
-                self.parsed_invoice_store.save(parsed.clone())?;
-
-                parsed
-            }
-        };
-
-        Ok(parsed_invoices)
-    }
-
-    pub async fn save_sow_pdf(&mut self, filename: &str, bytes: &[u8]) -> Result<ParsedSoWs> {
-        let (doc, ocr_doc) = self.stage_pdf(filename, bytes).await?;
-
-        let parsed_sows = match self.parsed_sow_store.load_payload(&doc.key)? {
-            Some(cached) => cached,
-            None => {
-                let llm = self.llm_client().await?;
-                let parsed = self
-                    .sow_parser
-                    .parse(llm, ocr_doc.clone())
-                    .await?;
-
-                self.parsed_sow_store.save(parsed.clone())?;
-
-                parsed
-            }
-        };
-
-        Ok(parsed_sows)
-    }
-
-    async fn stage_pdf(
-        &mut self,
-        filename: &str,
-        bytes: &[u8],
-    ) -> Result<(PdfDocument, DocumentIntelligenceOcrProcessedDocument)> {
-        let path = Path::new(&self.landing_dir).join(filename);
-        std::fs::write(&path, bytes)?;
-        self.landing_store.register(filename)?;
-
-        let doc = pdf_from_bytes(&path, bytes)?;
-
-        let ocr_doc = match self.processed_store.load_payload(&doc.key)? {
-            Some(cached) => cached,
-            None => {
-                let ocr = self.ocr_client().await?;
-                let response = ocr.analyze_bytes(bytes).await?;
-
-                let ocr_doc = DocumentIntelligenceOcrProcessedDocument {
-                    key: doc.key.clone(),
-                    analyze_operation_response: response,
-                };
-
-                self.processed_store.save(ocr_doc.clone())?;
-
-                ocr_doc
-            }
-        };
-
-        Ok((doc, ocr_doc))
+        let _ = self.pipeline.set(pipeline);
+        Ok(self.pipeline.get_mut().expect("pipeline just initialized"))
     }
 }

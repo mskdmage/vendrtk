@@ -3,52 +3,55 @@ use axum::{
     extract::{Multipart, State},
     routing,
 };
+use serde::Serialize;
 use tracing::info;
-use vendrtk_core::parsers::models::{ParsedInvoices, ParsedSoWs};
+use vendrtk_parsers::models::invoice::ParsedInvoices;
+use vendrtk_parsers::models::sow::ParsedSoWs;
+use vendrtk_pipelines::prebuilt::vendor_reconciliation::input::VendorReconciliationInput;
+use vendrtk_pipelines::prebuilt::vendor_reconciliation::output::VendorReconciliationOutput;
+
+use std::sync::Arc;
 
 use crate::state::AppState;
 use crate::web::error::{Error, Result};
-use std::sync::Arc;
 
 pub fn routes(state: Arc<AppState>) -> Router {
     Router::new()
-        .route("/upload/invoice", routing::post(upload_invoice_handler))
-        .route("/upload/sow", routing::post(upload_sow_handler))
+        .route("/upload", routing::post(upload_handler))
         .with_state(state)
 }
 
-async fn upload_invoice_handler(
-    State(state): State<Arc<AppState>>,
-    multipart: Multipart,
-) -> Result<Json<ParsedInvoices>> {
-    let (filename, bytes) = read_upload_file(multipart).await?;
-    info!(%filename, size = bytes.len(), document_type = "invoice", "received upload");
-
-    let parsed = state
-        .vendor_reconciliation_service
-        .lock()
-        .await
-        .save_pdf(&filename, &bytes)
-        .await?;
-
-    Ok(Json(parsed))
+#[derive(Debug, Serialize)]
+#[serde(tag = "document_type", content = "parsed", rename_all = "snake_case")]
+enum UploadResponse {
+    Invoice(ParsedInvoices),
+    Sow(ParsedSoWs),
 }
 
-async fn upload_sow_handler(
+impl From<VendorReconciliationOutput> for UploadResponse {
+    fn from(output: VendorReconciliationOutput) -> Self {
+        match output {
+            VendorReconciliationOutput::Invoice(parsed) => Self::Invoice(parsed),
+            VendorReconciliationOutput::Sow(parsed) => Self::Sow(parsed),
+        }
+    }
+}
+
+async fn upload_handler(
     State(state): State<Arc<AppState>>,
     multipart: Multipart,
-) -> Result<Json<ParsedSoWs>> {
+) -> Result<Json<UploadResponse>> {
     let (filename, bytes) = read_upload_file(multipart).await?;
-    info!(%filename, size = bytes.len(), document_type = "sow", "received upload");
+    info!(%filename, size = bytes.len(), "received upload");
 
-    let parsed = state
+    let output = state
         .vendor_reconciliation_service
         .lock()
         .await
-        .save_sow_pdf(&filename, &bytes)
+        .run(VendorReconciliationInput { filename, bytes })
         .await?;
 
-    Ok(Json(parsed))
+    Ok(Json(output.into()))
 }
 
 async fn read_upload_file(mut multipart: Multipart) -> Result<(String, Vec<u8>)> {

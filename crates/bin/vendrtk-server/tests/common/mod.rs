@@ -19,21 +19,12 @@ impl TestClient {
         CLIENT.get_or_init(init).await
     }
 
-    pub async fn upload_invoice(
+    pub async fn upload(
         &self,
         file_bytes: &[u8],
         filename: &str,
     ) -> reqwest::Result<reqwest::Response> {
-        self.upload_to("/api/files/upload/invoice", file_bytes, filename)
-            .await
-    }
-
-    pub async fn upload_sow(
-        &self,
-        file_bytes: &[u8],
-        filename: &str,
-    ) -> reqwest::Result<reqwest::Response> {
-        self.upload_to("/api/files/upload/sow", file_bytes, filename)
+        self.upload_to("/api/files/upload", file_bytes, filename)
             .await
     }
 

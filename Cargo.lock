@@ -7618,6 +7618,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "vendrtk-pipelines"
+version = "0.1.0"
+dependencies = [
+ "thiserror",
+ "tracing",
+ "vendrtk-azure",
+ "vendrtk-ocr",
+ "vendrtk-parsers",
+ "vendrtk-storage",
+]
+
+[[package]]
 name = "vendrtk-server"
 version = "0.1.0"
 dependencies = [
@@ -7636,6 +7648,7 @@ dependencies = [
  "vendrtk-core",
  "vendrtk-ocr",
  "vendrtk-parsers",
+ "vendrtk-pipelines",
  "vendrtk-storage",
 ]
 
