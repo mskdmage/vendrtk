@@ -4,3 +4,9 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+tracing = "0.1.44"
+thiserror = "2.0.18"
+vendrtk-storage = { path = "../../lib/vendrtk-storage" }
+vendrtk-ocr = { path = "../../lib/vendrtk-ocr" }
+vendrtk-parsers = { path = "../../lib/vendrtk-parsers" }
+vendrtk-azure = { path = "../../lib/vendrtk-azure" }

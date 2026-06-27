@@ -13,6 +13,7 @@ pub mod storage {
 
     pub mod traits {
         pub use vendrtk_storage::traits::document::Document;
+        pub use vendrtk_storage::traits::document_store::DocumentStore;
         pub use vendrtk_storage::traits::store::{ProcessedDocumentStore, Store};
     }
 }

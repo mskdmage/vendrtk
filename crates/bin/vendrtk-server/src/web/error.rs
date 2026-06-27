@@ -1,4 +1,8 @@
 use axum::{http::StatusCode, response::IntoResponse};
+use vendrtk_azure::error::Error as AzureError;
+use vendrtk_ocr::error::Error as OcrError;
+use vendrtk_parsers::error::Error as ParserError;
+use vendrtk_pipelines::error::Error as PipelineError;
 use vendrtk_storage::error::Error as StorageError;
 
 use crate::services::error::ServiceError;
@@ -20,19 +24,31 @@ pub enum Error {
 impl From<ServiceError> for Error {
     fn from(err: ServiceError) -> Self {
         match &err {
-            ServiceError::Storage(StorageError::InvalidExtension { .. })
-            | ServiceError::Storage(StorageError::InvalidMagicBytes)
-            | ServiceError::Parser(vendrtk_parsers::error::Error::EmptyOcrContent)
-            | ServiceError::Ocr(vendrtk_ocr::error::Error::InvalidResult) => {
+            ServiceError::Pipeline(pipeline_err) if is_bad_request(pipeline_err) => {
                 Self::BadRequest(err.to_string())
             }
-            ServiceError::Storage(StorageError::NotFound(key)) => Self::NotFound(key.clone()),
+            ServiceError::Pipeline(PipelineError::Storage(StorageError::NotFound(key))) => {
+                Self::NotFound(key.clone())
+            }
+            ServiceError::Azure(AzureError::Config(_)) => Self::BadRequest(err.to_string()),
             _ => {
                 tracing::error!(error = ?err, "pipeline failed");
                 Self::InternalServer
             }
         }
     }
+}
+
+fn is_bad_request(err: &PipelineError) -> bool {
+    matches!(
+        err,
+        PipelineError::Storage(StorageError::InvalidExtension { .. })
+            | PipelineError::Storage(StorageError::InvalidMagicBytes)
+            | PipelineError::Parser(ParserError::EmptyOcrContent)
+            | PipelineError::Ocr(OcrError::InvalidResult)
+            | PipelineError::UnknownDocumentType
+            | PipelineError::ConflictingParsedCache
+    )
 }
 
 impl IntoResponse for Error {

@@ -19,4 +19,5 @@ vendrtk-storage = { path = "../../lib/vendrtk-storage" }
 vendrtk-ocr = { path = "../../lib/vendrtk-ocr" }
 vendrtk-parsers = { path = "../../lib/vendrtk-parsers" }
 vendrtk-azure = { path = "../../lib/vendrtk-azure" }
+vendrtk-pipelines = { path = "../../lib/vendrtk-pipelines" }
 thiserror = "2.0.18"

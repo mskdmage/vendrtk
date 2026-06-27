@@ -8,7 +8,7 @@ use tracing::debug;
 use crate::{
     error::{Error, Result},
     models::documents::{PdfDocument, pdf_from_bytes},
-    traits::{document::Document, store::Store},
+    traits::{document::Document, document_store::DocumentStore, store::Store},
 };
 
 pub struct LocalDocumentStore<T: Document> {
@@ -59,7 +59,31 @@ where
     }
 }
 
+impl DocumentStore for LocalDocumentStore<PdfDocument> {
+    fn save_upload(
+        &mut self,
+        filename: impl AsRef<std::path::Path>,
+        bytes: &[u8],
+    ) -> Result<PdfDocument> {
+        LocalDocumentStore::save_upload(self, filename, bytes)
+    }
+}
+
 impl LocalDocumentStore<PdfDocument> {
+    pub fn save_upload(
+        &mut self,
+        filename: impl AsRef<std::path::Path>,
+        bytes: &[u8],
+    ) -> Result<PdfDocument> {
+        let path = self.store_root.join(filename.as_ref());
+        std::fs::write(&path, bytes).map_err(Error::Io)?;
+        let doc = pdf_from_bytes(&path, bytes)?;
+        debug!("Registering document: {}", doc.key);
+        self.ledger.insert(doc.key.clone(), doc.clone());
+        self.save_ledger()?;
+        Ok(doc)
+    }
+
     pub fn register(&mut self, filename: impl AsRef<std::path::Path>) -> Result<()> {
         let path = self.store_root.join(filename);
         let bytes = std::fs::read(&path).map_err(Error::Io)?;
