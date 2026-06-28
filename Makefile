@@ -6,8 +6,13 @@ lint:
 	@cargo fmt &&\
 	cargo clippy
 
+# Tests
+
 test:
 	@cargo test --workspace
+
+test.pipelines:
+	@cargo test -p pipelines
 
 # Targets
 
