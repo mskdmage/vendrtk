@@ -30,11 +30,11 @@ impl App {
         );
 
         let router = Router::new()
-            .merge(default::routes(&config().public_dir))
             .nest(
                 "/api",
                 health::routes(state.clone()).nest("/jobs", jobs::routes(state)),
-            );
+            )
+            .merge(default::routes(&config().public_dir));
 
         Self {
             server: axum::serve(listener, router),

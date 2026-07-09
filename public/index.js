@@ -27,6 +27,9 @@ form.addEventListener("submit", async (event) => {
 
     if (!response.ok) {
         status.textContent = "ERROR - upload failed (see OUTPUT)";
+        if (!output.textContent) {
+            output.textContent = `HTTP ${response.status} ${response.statusText}`;
+        }
         return;
     }
 

@@ -6,3 +6,4 @@ edition = "2024"
 [dependencies]
 storage = { path = "../storage" }
 pipelines = { path = "../pipelines" }
+ocr = { path = "../ocr" }
