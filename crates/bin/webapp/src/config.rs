@@ -15,6 +15,7 @@ pub struct Config {
     pub port: u16,
     pub public_dir: String,
     pub log_level: String,
+    pub max_upload_bytes: usize,
 }
 
 impl Default for Config {
@@ -24,6 +25,7 @@ impl Default for Config {
             port: 8080,
             public_dir: "public".into(),
             log_level: "info".into(),
+            max_upload_bytes: 50 * 1024 * 1024,
         }
     }
 }
@@ -48,6 +50,10 @@ impl Config {
 
             log_level: env::var("LOG_LEVEL").unwrap_or(defaults.log_level),
 
+            max_upload_bytes: env::var("MAX_UPLOAD_BYTES")
+                .ok()
+                .and_then(|v| v.parse().ok())
+                .unwrap_or(defaults.max_upload_bytes),
         }
     }
 }

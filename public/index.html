@@ -4,8 +4,35 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <pre>Hello, World!</pre>
+    <pre>
+        ================================================================================
+                                        VENDRTK
+                                      Version 0.0.1
+        ================================================================================
+        
+        WHAT IS THIS?
+        -------------
+          vendrtk ingests vendor invoices and statements of work (PDF),
+          runs them through a parsing pipeline, and returns structured
+          output suitable for CSV export.
+        
+        QUICK START
+        -----------
+          1. Select a .PDF document below
+          2. Press UPLOAD
+          3. Review the response data shown under OUTPUT
+    </pre>
+    <form id="upload-form" action="/api/jobs/upload" method="post" enctype="multipart/form-data">
+        <p id="form-label">PDF FILE:</p>
+        <input id="file" name="file" type="file" accept=".pdf,application/pdf" required>
+        <button type="submit" id="submit-button">[ UPLOAD ]</button>
+    </form>
+    <p>STATUS: <span id="status">IDLE - awaiting file selection</span></p>
+    <p>OUTPUT:</p>
+    <pre id="response"></pre>
+    <script src="index.js"></script>
 </body>
 </html>

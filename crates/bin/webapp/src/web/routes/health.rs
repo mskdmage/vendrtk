@@ -1,10 +1,12 @@
-use serde::{Serialize, Deserialize};
-use axum::{Router, routing, response::Json};
-use crate::web::error::Result;
 use std::sync::Arc;
-use crate::state::State;
 
-pub fn routes(state: Arc<State>) -> Router {
+use axum::{response::Json, routing, Router};
+use serde::{Deserialize, Serialize};
+
+use crate::state::AppState;
+use crate::web::error::Result;
+
+pub fn routes(state: Arc<AppState>) -> Router {
     Router::new()
         .route("/health", routing::get(health_handler))
         .with_state(state)

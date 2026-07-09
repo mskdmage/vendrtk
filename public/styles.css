@@ -1,0 +1,14 @@
+body {
+    font-family: monospace;
+    margin: 2rem;
+}
+
+pre {
+    white-space: pre-wrap;
+}
+
+#response {
+    background-color: #f0f0f0;
+    text-align: left;
+    padding: 1rem;
+}
