@@ -1,0 +1,41 @@
+pub type Result<T> = core::result::Result<T, Error>;
+
+#[derive(Debug, thiserror::Error)]
+pub enum Error {
+    #[error("missing configuration: {0}")]
+    Config(String),
+
+    #[error("authentication failed: {0}")]
+    Auth(String),
+
+    #[error("{context}: {source}")]
+    Request {
+        context: String,
+        #[source]
+        source: reqwest::Error,
+    },
+
+    #[error("API error ({status}): {message}")]
+    Api { status: u16, message: String },
+
+    #[error("operation failed: {0}")]
+    OperationFailed(String),
+
+    #[error("operation timed out after {attempts} attempts")]
+    PollTimeout { attempts: u32 },
+
+    #[error("missing response header: {0}")]
+    MissingHeader(String),
+
+    #[error("client setup failed: {0}")]
+    Client(String),
+}
+
+impl Error {
+    pub fn request(context: impl Into<String>, source: reqwest::Error) -> Self {
+        Self::Request {
+            context: context.into(),
+            source,
+        }
+    }
+}
