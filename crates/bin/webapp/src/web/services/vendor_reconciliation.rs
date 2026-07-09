@@ -1,7 +1,10 @@
 use std::sync::Mutex;
 
 use vendrtk::ocr::{
-    prebuilt::azure::client::DocumentIntelligenceClient,
+    prebuilt::azure::{
+        client::DocumentIntelligenceClient,
+        models::AnalyzeOperationResponse,
+    },
     traits::OCRClient,
 };
 use vendrtk::storage::{
@@ -15,7 +18,7 @@ use crate::web::error::{Error, Result};
 pub struct VendorReconciliationService {
     pub file_repository: LocalRepository,
     pub ocr_client: DocumentIntelligenceClient,
-    pub ocr_processed_store: Mutex<LocalOcrProcessedStore>,
+    pub ocr_processed_store: Mutex<LocalOcrProcessedStore<AnalyzeOperationResponse>>,
 }
 
 impl VendorReconciliationService {
@@ -25,7 +28,9 @@ impl VendorReconciliationService {
             ocr_client: DocumentIntelligenceClient::from_env(
                 None,
             ).unwrap(),
-            ocr_processed_store: Mutex::new(LocalOcrProcessedStore::new(".ocr").unwrap()),
+            ocr_processed_store: Mutex::new(
+                LocalOcrProcessedStore::<AnalyzeOperationResponse>::new(".ocr").unwrap(),
+            ),
         }
     }
 

@@ -1,6 +1,7 @@
+use serde::{Serialize, de::DeserializeOwned};
 use crate::error::Result;
 
-pub trait ParsedPayload {
+pub trait ParsedPayload: Serialize + DeserializeOwned {
     fn key(&self) -> &str;
 }
 

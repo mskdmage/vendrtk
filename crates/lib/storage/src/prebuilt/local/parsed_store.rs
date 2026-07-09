@@ -1,21 +1,25 @@
 use std::fs;
-use std::path::PathBuf;
 use std::marker::PhantomData;
+use std::path::PathBuf;
 use tracing::debug;
-use ocr::traits::ocr_processed_document::OcrProcessedDocument;
+use parsers::traits::ParsedPayload;
+
 use crate::error::{Error, Result};
 use crate::traits::Store;
 
-pub struct LocalOcrProcessedStore<T: OcrProcessedDocument> {
+pub struct LocalParsedStore<T: ParsedPayload> {
     root: PathBuf,
     _marker: PhantomData<T>,
 }
 
-impl<T: OcrProcessedDocument> LocalOcrProcessedStore<T> {
+impl<T: ParsedPayload> LocalParsedStore<T> {
     pub fn new(path: &str) -> Result<Self> {
         let root = PathBuf::from(path);
         fs::create_dir_all(&root)?;
-        Ok(Self { root, _marker: PhantomData::<T> })
+        Ok(Self {
+            root,
+            _marker: PhantomData::<T>,
+        })
     }
 
     fn shard(key: &str) -> &str {
@@ -35,7 +39,7 @@ impl<T: OcrProcessedDocument> LocalOcrProcessedStore<T> {
         }
         let bytes = serde_json::to_vec(entity)?;
         debug!(
-            "writing ocr result: key={} path={}",
+            "writing parsed result: key={} path={}",
             key,
             path.display()
         );
@@ -53,7 +57,7 @@ impl<T: OcrProcessedDocument> LocalOcrProcessedStore<T> {
     }
 }
 
-impl<T: OcrProcessedDocument> Store<T> for LocalOcrProcessedStore<T> {
+impl<T: ParsedPayload> Store<T> for LocalParsedStore<T> {
     fn create(&mut self, key: &str, entity: T) -> Result<()> {
         if self.exists(key)? {
             return Err(Error::Repository(format!("key already exists: {key}")));
@@ -120,20 +124,11 @@ mod tests {
     struct SampleEntity {
         key: String,
         status: String,
-        content: String,
     }
 
-    impl OcrProcessedDocument for SampleEntity {
+    impl ParsedPayload for SampleEntity {
         fn key(&self) -> &str {
             &self.key
-        }
-
-        fn raw_content(&self) -> ocr::error::Result<String> {
-            Ok(self.content.clone())
-        }
-
-        fn pages(&self) -> ocr::error::Result<Vec<String>> {
-            Ok(vec![self.content.clone()])
         }
     }
 
@@ -141,7 +136,6 @@ mod tests {
         SampleEntity {
             key: "sample".into(),
             status: "succeeded".into(),
-            content: "page one".into(),
         }
     }
 
@@ -150,13 +144,13 @@ mod tests {
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap()
             .as_nanos();
-        std::env::temp_dir().join(format!("ocr_processed_store_{n}"))
+        std::env::temp_dir().join(format!("parsed_store_{n}"))
     }
 
     #[test]
     fn create_and_get_round_trip() {
         let root = temp_root();
-        let mut store = LocalOcrProcessedStore::<SampleEntity>::new(root.to_str().unwrap()).unwrap();
+        let mut store = LocalParsedStore::<SampleEntity>::new(root.to_str().unwrap()).unwrap();
         let entity = sample_entity();
 
         store.create("abc123", entity.clone()).unwrap();
@@ -169,7 +163,7 @@ mod tests {
     #[test]
     fn create_rejects_duplicate_key() {
         let root = temp_root();
-        let mut store = LocalOcrProcessedStore::<SampleEntity>::new(root.to_str().unwrap()).unwrap();
+        let mut store = LocalParsedStore::<SampleEntity>::new(root.to_str().unwrap()).unwrap();
         let entity = sample_entity();
 
         store.create("abc123", entity.clone()).unwrap();
@@ -180,7 +174,7 @@ mod tests {
     #[test]
     fn update_returns_previous_value() {
         let root = temp_root();
-        let mut store = LocalOcrProcessedStore::<SampleEntity>::new(root.to_str().unwrap()).unwrap();
+        let mut store = LocalParsedStore::<SampleEntity>::new(root.to_str().unwrap()).unwrap();
         let original = sample_entity();
         let mut updated = sample_entity();
         updated.status = "failed".into();
@@ -196,7 +190,7 @@ mod tests {
     #[test]
     fn update_missing_key_returns_none() {
         let root = temp_root();
-        let mut store = LocalOcrProcessedStore::<SampleEntity>::new(root.to_str().unwrap()).unwrap();
+        let mut store = LocalParsedStore::<SampleEntity>::new(root.to_str().unwrap()).unwrap();
 
         assert!(store
             .update("missing", sample_entity())
@@ -208,7 +202,7 @@ mod tests {
     #[test]
     fn delete_removes_entry() {
         let root = temp_root();
-        let mut store = LocalOcrProcessedStore::<SampleEntity>::new(root.to_str().unwrap()).unwrap();
+        let mut store = LocalParsedStore::<SampleEntity>::new(root.to_str().unwrap()).unwrap();
         let entity = sample_entity();
 
         store.create("abc123", entity.clone()).unwrap();
@@ -222,7 +216,7 @@ mod tests {
     #[test]
     fn list_returns_all_entries() {
         let root = temp_root();
-        let mut store = LocalOcrProcessedStore::<SampleEntity>::new(root.to_str().unwrap()).unwrap();
+        let mut store = LocalParsedStore::<SampleEntity>::new(root.to_str().unwrap()).unwrap();
 
         store.create("abc123", sample_entity()).unwrap();
         store.create("def456", sample_entity()).unwrap();

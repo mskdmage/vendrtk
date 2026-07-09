@@ -4966,6 +4966,8 @@ name = "ocr"
 version = "0.1.0"
 dependencies = [
  "providers",
+ "serde",
+ "serde_json",
  "thiserror",
  "tracing",
 ]
@@ -6815,6 +6817,7 @@ dependencies = [
  "chrono",
  "md5",
  "ocr",
+ "parsers",
  "serde",
  "serde_json",
  "sha2 0.11.0",
