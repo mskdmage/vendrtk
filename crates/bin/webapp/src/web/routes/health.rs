@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use axum::{response::Json, routing, Router};
+use axum::{Router, response::Json, routing};
 use serde::{Deserialize, Serialize};
 
 use crate::state::AppState;

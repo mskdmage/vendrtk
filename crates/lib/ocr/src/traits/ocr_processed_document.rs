@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use crate::error::Result;
+use serde::{Serialize, de::DeserializeOwned};
 
 pub trait OcrProcessedDocument: Serialize + DeserializeOwned {
     fn key(&self) -> &str;

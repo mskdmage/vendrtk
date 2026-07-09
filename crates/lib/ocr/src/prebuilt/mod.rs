@@ -1,2 +1,2 @@
-pub mod local;
 pub mod azure;
+pub mod local;

@@ -2,21 +2,18 @@ pub mod config;
 pub mod state;
 pub mod web;
 
-use std::sync::Arc;
-use tokio::net::TcpListener;
 use axum::{Router, serve::Serve};
 use config::config;
+use std::sync::Arc;
+use tokio::net::TcpListener;
 use web::routes::{default, health, jobs};
 
-
 pub struct App {
-    server: Serve<TcpListener, Router, Router>
+    server: Serve<TcpListener, Router, Router>,
 }
 
 impl App {
-
     pub async fn new() -> Self {
-
         let state = Arc::new(
             state::AppState::new()
                 .await
@@ -43,11 +40,9 @@ impl App {
         Self {
             server: axum::serve(listener, router),
         }
-
     }
 
     pub async fn run(self) {
         self.server.await.unwrap();
     }
-
 }

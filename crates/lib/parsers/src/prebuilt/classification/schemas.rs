@@ -10,7 +10,11 @@ pub enum DocumentType {
         description = "A bill or invoice requesting payment for goods or services."
     )]
     Invoice,
-    #[serde(alias = "Statement of Work", alias = "SOW", alias = "statement of work")]
+    #[serde(
+        alias = "Statement of Work",
+        alias = "SOW",
+        alias = "statement of work"
+    )]
     #[schemars(
         title = "SoW",
         description = "A rate schedule, pricing agreement, or statement of work (SoW)."

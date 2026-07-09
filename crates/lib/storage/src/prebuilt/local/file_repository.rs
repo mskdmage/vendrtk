@@ -124,10 +124,7 @@ mod tests {
         let root = temp_root();
         let repo = LocalRepository::new(root.to_str().unwrap()).unwrap();
 
-        assert!(repo
-            .get(FileKind::Pdf, "missing")
-            .unwrap()
-            .is_none());
+        assert!(repo.get(FileKind::Pdf, "missing").unwrap().is_none());
         let _ = fs::remove_dir_all(root);
     }
 

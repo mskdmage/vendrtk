@@ -1,8 +1,8 @@
+use parsers::traits::ParsedPayload;
 use std::fs;
 use std::marker::PhantomData;
 use std::path::PathBuf;
 use tracing::debug;
-use parsers::traits::ParsedPayload;
 
 use crate::error::{Error, Result};
 use crate::traits::Store;
@@ -27,9 +27,7 @@ impl<T: ParsedPayload> LocalParsedStore<T> {
     }
 
     fn path_for(&self, key: &str) -> PathBuf {
-        self.root
-            .join(Self::shard(key))
-            .join(format!("{key}.json"))
+        self.root.join(Self::shard(key)).join(format!("{key}.json"))
     }
 
     fn write_entity(&self, key: &str, entity: &T) -> Result<()> {
@@ -38,11 +36,7 @@ impl<T: ParsedPayload> LocalParsedStore<T> {
             fs::create_dir_all(parent)?;
         }
         let bytes = serde_json::to_vec(entity)?;
-        debug!(
-            "writing parsed result: key={} path={}",
-            key,
-            path.display()
-        );
+        debug!("writing parsed result: key={} path={}", key, path.display());
         fs::write(path, bytes)?;
         Ok(())
     }
@@ -192,10 +186,7 @@ mod tests {
         let root = temp_root();
         let mut store = LocalParsedStore::<SampleEntity>::new(root.to_str().unwrap()).unwrap();
 
-        assert!(store
-            .update("missing", sample_entity())
-            .unwrap()
-            .is_none());
+        assert!(store.update("missing", sample_entity()).unwrap().is_none());
         let _ = fs::remove_dir_all(root);
     }
 

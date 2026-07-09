@@ -1,5 +1,3 @@
-use std::future::Future;
-
 use crate::error::{Error, Result};
 use crate::models::invoice::ParsedInvoices;
 use crate::prebuilt::invoice::schemas::ExtractedInvoiceList;
@@ -17,30 +15,27 @@ impl LLMInvoiceParser {
         Self
     }
 
-    pub fn parse<C, O>(
-        &self,
-        client: &C,
-        ocr_result: O,
-    ) -> impl Future<Output = Result<ParsedInvoices>> + Send
+    pub async fn parse<C, O>(&self, client: &C, ocr_result: O) -> Result<ParsedInvoices>
     where
         C: LLMClient + Send + Sync,
         O: OcrProcessedDocument + Send,
     {
-        async move {
-            let key = ocr_result.key().to_string();
-            let content = ocr_result
-                .raw_content()
-                .map_err(|_e| Error::EmptyOcrContent)?;
-            if content.trim().is_empty() {
-                return Err(Error::EmptyOcrContent);
-            }
-
-            let extracted: ExtractedInvoiceList =
-                client.extract(EXTRACTION_PREAMBLE, &content).await?;
-
-            Ok(extracted.into_parsed_invoices(key))
+        let key = ocr_result.key().to_string();
+        let content = ocr_result
+            .raw_content()
+            .map_err(|_e| Error::EmptyOcrContent)?;
+        if content.trim().is_empty() {
+            return Err(Error::EmptyOcrContent);
         }
+
+        let extracted: ExtractedInvoiceList = client.extract(EXTRACTION_PREAMBLE, &content).await?;
+
+        Ok(extracted.into_parsed_invoices(key))
     }
 }
 
-pub use LLMInvoiceParser as SampleInvoiceParser;
+impl Default for LLMInvoiceParser {
+    fn default() -> Self {
+        Self
+    }
+}

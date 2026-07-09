@@ -1,18 +1,14 @@
 pub use providers::azure::foundry::client::FoundryClient;
 
-use providers::azure::foundry::{
-    api_version::ApiVersion,
-    deployment::Deployment,
-};
+use providers::azure::foundry::{api_version::ApiVersion, deployment::Deployment};
 use rig::client::CompletionClient;
 
 use crate::error::{Error, Result};
 use crate::traits::LLMClient;
 
 pub async fn connect_from_env() -> Result<FoundryClient> {
-    let endpoint = std::env::var("AZURE_OPENAI_ENDPOINT").map_err(|_| {
-        Error::LlmRequestFailed("AZURE_OPENAI_ENDPOINT is not set".into())
-    })?;
+    let endpoint = std::env::var("AZURE_OPENAI_ENDPOINT")
+        .map_err(|_| Error::LlmRequestFailed("AZURE_OPENAI_ENDPOINT is not set".into()))?;
 
     FoundryClient::connect(
         &endpoint,
@@ -38,7 +34,7 @@ impl LLMClient for FoundryClient {
             + 'static,
     {
         let client = self.client.clone();
-        let deployment = self.deployment.clone();
+        let deployment = self.deployment;
         let preamble = preamble.to_string();
         let content = content.to_string();
 

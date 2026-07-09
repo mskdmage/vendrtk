@@ -1,8 +1,7 @@
 pub use providers::azure::document_intelligence::client::DocumentIntelligenceClient;
 
 use providers::azure::document_intelligence::{
-    models::AnalyzeOperationResponse,
-    prebuilt_model::PrebuiltModel,
+    models::AnalyzeOperationResponse, prebuilt_model::PrebuiltModel,
 };
 
 use crate::error::Result;

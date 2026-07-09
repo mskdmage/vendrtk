@@ -1,5 +1,5 @@
-use std::future::Future;
 use crate::error::Result;
+use std::future::Future;
 
 // TODO: Currently coupled to RIG return type for structured output.
 // Might need to decouple this to support other structured output providers.

@@ -1,17 +1,11 @@
 use std::sync::Mutex;
 
 use vendrtk::ocr::{
-    prebuilt::azure::{
-        client::DocumentIntelligenceClient,
-        models::AnalyzeOperationResponse,
-    },
+    prebuilt::azure::{client::DocumentIntelligenceClient, models::AnalyzeOperationResponse},
     traits::OCRClient,
 };
 use vendrtk::parsers::{
-    models::{
-        doc_type::ParsedDocumentType,
-        invoice::ParsedInvoices,
-    },
+    models::{doc_type::ParsedDocumentType, invoice::ParsedInvoices},
     prebuilt::{
         classification::llm::parser::LLMDocumentClassifier,
         clients::azure::{self, FoundryClient},
@@ -98,7 +92,7 @@ impl VendorReconciliationService {
             });
         }
 
-        let document_type = LLMDocumentClassifier::new()
+        let document_type = LLMDocumentClassifier
             .classify(&self.llm_client, ocr.clone())
             .await
             .map_err(|error| {

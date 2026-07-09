@@ -1,26 +1,21 @@
-use std::sync::Arc;
-use serde_json::json;
-use base64::{
-    Engine,
-    engine::general_purpose::STANDARD,
-};
-use reqwest::{
-    Client as HttpClient,
-    Response,
-    StatusCode,
-    header::{AUTHORIZATION, HeaderMap, HeaderValue},
-};
-use crate::azure::{
-    auth::{Auth, Credential},
-    scope::COGNITIVE_SERVICES_SCOPE,
-};
-use crate::error::{Error, Result};
 use crate::azure::document_intelligence::{
     api_version::ApiVersion,
     config::Config,
     headers::{OPERATION_LOCATION_HEADER, SUBSCRIPTION_KEY_HEADER},
     models::AnalyzeOperationResponse,
 };
+use crate::azure::{
+    auth::{Auth, Credential},
+    scope::COGNITIVE_SERVICES_SCOPE,
+};
+use crate::error::{Error, Result};
+use base64::{Engine, engine::general_purpose::STANDARD};
+use reqwest::{
+    Client as HttpClient, Response, StatusCode,
+    header::{AUTHORIZATION, HeaderMap, HeaderValue},
+};
+use serde_json::json;
+use std::sync::Arc;
 
 pub struct DocumentIntelligenceClient {
     http_client: HttpClient,
@@ -54,7 +49,7 @@ impl DocumentIntelligenceClient {
     }
 
     // TODO: Must think about ergonomics for supporting optional env variables,
-    // perhaps we dont support from_env at all, and just use parameters, and make it 
+    // perhaps we dont support from_env at all, and just use parameters, and make it
     // responsibility of the caller to pass in the necessary variables,
     pub fn from_env(config: Option<Config>) -> Result<Self> {
         let endpoint = std::env::var("AZURE_COGNITIVE_SERVICES_ENDPOINT")
@@ -63,11 +58,13 @@ impl DocumentIntelligenceClient {
         let auth = if let Ok(key) = std::env::var("AZURE_COGNITIVE_SERVICES_KEY") {
             Auth::ApiKey(key)
         } else {
-            Auth::Credential(Arc::new(Credential::new(None, None, None).map_err(|e| {
-                Error::Auth(format!(
-                    "set AZURE_COGNITIVE_SERVICES_KEY or use Entra (az login): {e}"
-                ))
-            })?))
+            Auth::Credential(Arc::new(Credential::new(None, None, None).map_err(
+                |e| {
+                    Error::Auth(format!(
+                        "set AZURE_COGNITIVE_SERVICES_KEY or use Entra (az login): {e}"
+                    ))
+                },
+            )?))
         };
 
         Self::new(

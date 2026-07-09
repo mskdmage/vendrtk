@@ -1,9 +1,8 @@
-use rig::providers::azure;
-use crate::error::{Error, Result};
-use crate::azure::scope::COGNITIVE_SERVICES_SCOPE;
 use crate::azure::auth::Credential;
 use crate::azure::foundry::deployment::Deployment;
-
+use crate::azure::scope::COGNITIVE_SERVICES_SCOPE;
+use crate::error::{Error, Result};
+use rig::providers::azure;
 
 pub struct FoundryClient {
     pub client: azure::Client,
@@ -14,7 +13,7 @@ impl FoundryClient {
     pub fn new(client: azure::Client, deployment: &Deployment) -> Self {
         Self {
             client,
-            deployment: deployment.clone(),
+            deployment: *deployment,
         }
     }
 
@@ -25,7 +24,7 @@ impl FoundryClient {
     ) -> Result<Self> {
         let client = azure_openai_client(endpoint, api_version).await?;
         Ok(Self::new(client, deployment))
-    }    
+    }
 }
 
 pub async fn azure_openai_client(endpoint: &str, api_version: &str) -> Result<azure::Client> {
