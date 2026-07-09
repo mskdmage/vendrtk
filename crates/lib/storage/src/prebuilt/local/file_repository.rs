@@ -4,6 +4,7 @@ use std::path::{Path, PathBuf};
 use crate::error::Result;
 use crate::models::{File, FileKind, FileRef};
 use crate::traits::{Blob, Repository};
+use tracing::debug;
 
 pub struct LocalRepository {
     root: PathBuf,
@@ -48,7 +49,15 @@ impl Repository<File> for LocalRepository {
         let path = self.path_for(kind, &key);
 
         if !path.exists() {
+            debug!(
+                "writing blob: key={} kind={:?} path={}",
+                key,
+                kind,
+                path.display()
+            );
             self.write_file(&path, bytes)?;
+        } else {
+            debug!("blob already exists: key={} kind={:?}", key, kind);
         }
 
         Ok(FileRef { key, kind })

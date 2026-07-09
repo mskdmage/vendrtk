@@ -1,7 +1,13 @@
-pub struct State {}
+use super::web::services::vendor_reconciliation::VendorReconciliationService;
 
-impl State {
+pub struct AppState {
+    pub vendor_reconciliation_service: VendorReconciliationService,
+}
+
+impl AppState {
     pub async fn new() -> Self {
-        Self {}
+        Self {
+            vendor_reconciliation_service: VendorReconciliationService::new(),
+        }
     }
 }

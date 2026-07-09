@@ -1850,6 +1850,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ba73ea9cf16a25df0c8caa16c51acb937d5712a8429db78a3ee29d5dcacd3a65"
 
 [[package]]
+name = "vendrtk"
+version = "0.1.0"
+dependencies = [
+ "pipelines",
+ "storage",
+]
+
+[[package]]
 name = "version_check"
 version = "0.9.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1979,6 +1987,7 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "uuid",
+ "vendrtk",
 ]
 
 [[package]]

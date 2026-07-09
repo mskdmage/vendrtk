@@ -1,7 +1,8 @@
 use crate::traits::Blob;
 use crate::utils::hashing::calculate_hash;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "lowercase")]
 pub enum FileKind {
     Pdf,
     Jpeg,
@@ -23,7 +24,7 @@ impl FileKind {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct FileRef {
     pub key: String,
     pub kind: FileKind,
