@@ -2,7 +2,7 @@
 resolver = "3"
 members = [
     # bins
-    "crates/bin/webapp",
+    "crates/bin/webapp", "crates/lib/ocr",
     #libs
     "crates/lib/pipelines",
     "crates/lib/storage", "crates/lib/vendrtk",
