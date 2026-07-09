@@ -4,3 +4,12 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+tracing = "0.1.44"
+chrono = { version = "0.4", features = ["serde"] }
+tokio = { version = "1.52", features = ["time"] }
+thiserror = "2.0.18"
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.150"
+base64 = "0.22.1"
+reqwest = { version = "0.13.4", features = ["json"] }
+providers = { path = "../../lib/providers" }
