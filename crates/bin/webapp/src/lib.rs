@@ -17,7 +17,11 @@ impl App {
 
     pub async fn new() -> Self {
 
-        let state = Arc::new(state::AppState::new().await);
+        let state = Arc::new(
+            state::AppState::new()
+                .await
+                .expect("failed to initialize application state"),
+        );
 
         let addr = std::net::SocketAddr::from((config().ip, config().port));
 

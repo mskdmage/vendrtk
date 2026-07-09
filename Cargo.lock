@@ -7655,6 +7655,7 @@ name = "vendrtk"
 version = "0.1.0"
 dependencies = [
  "ocr",
+ "parsers",
  "pipelines",
  "storage",
 ]

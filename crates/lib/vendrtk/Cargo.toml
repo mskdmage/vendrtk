@@ -7,3 +7,4 @@ edition = "2024"
 storage = { path = "../storage" }
 pipelines = { path = "../pipelines" }
 ocr = { path = "../ocr" }
+parsers = { path = "../parsers" }
