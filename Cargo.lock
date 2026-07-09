@@ -5083,6 +5083,15 @@ dependencies = [
 [[package]]
 name = "parsers"
 version = "0.1.0"
+dependencies = [
+ "ocr",
+ "providers",
+ "schemars 1.2.1",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tokio",
+]
 
 [[package]]
 name = "paste"
