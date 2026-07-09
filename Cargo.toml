@@ -5,5 +5,8 @@ members = [
     "crates/bin/webapp",
     #libs
     "crates/lib/pipelines",
-    "crates/lib/storage", "crates/lib/vendrtk",
+    "crates/lib/storage",
+    "crates/lib/ocr",
+    "crates/lib/vendrtk",
+    "crates/lib/providers",
 ]
