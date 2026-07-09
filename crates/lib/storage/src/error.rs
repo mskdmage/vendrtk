@@ -10,4 +10,10 @@ pub enum Error {
 
     #[error("not found: {0}")]
     NotFound(String),
+
+    #[error("invalid file type: {0}")]
+    InvalidFileType(String),
+
+    #[error("repository error: {0}")]
+    Repository(String),
 }
