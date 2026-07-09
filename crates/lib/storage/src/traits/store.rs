@@ -1,6 +1,5 @@
-use serde::{Serialize, de::DeserializeOwned};
 use crate::error::Result;
-
+use serde::{Serialize, de::DeserializeOwned};
 
 pub trait Store<T: Serialize + DeserializeOwned> {
     fn create(&mut self, key: &str, entity: T) -> Result<()>;

@@ -10,6 +10,7 @@ use serde::{Deserialize, Serialize};
 use crate::config::config;
 use crate::state::AppState;
 use crate::web::error::{Error, Result};
+use vendrtk::parsers::models::{doc_type::ParsedDocumentType, invoice::ParsedInvoices};
 use vendrtk::storage::models::FileRef;
 
 pub fn routes(state: Arc<AppState>) -> Router {
@@ -24,6 +25,8 @@ pub struct UploadResponse {
     filename: String,
     size: usize,
     file: FileRef,
+    document_type: ParsedDocumentType,
+    invoice: Option<ParsedInvoices>,
 }
 
 async fn upload_handler(
@@ -38,23 +41,26 @@ async fn upload_handler(
         let filename = field.file_name().unwrap_or("unknown").to_string();
         let bytes = field.bytes().await.map_err(map_multipart_error)?;
 
-        let file = state
+        let processed = state
             .vendor_reconciliation_service
-            .put_file(&bytes)
+            .upload_and_process(&bytes)
             .await?;
 
         tracing::info!(
-            "upload complete: filename={} size={} key={} kind={:?}",
+            "upload complete: filename={} size={} key={} kind={:?} document_type={:?}",
             filename,
             bytes.len(),
-            file.key,
-            file.kind
+            processed.file_ref.key,
+            processed.file_ref.kind,
+            processed.document_type
         );
 
         return Ok(Json(UploadResponse {
             filename,
             size: bytes.len(),
-            file,
+            file: processed.file_ref,
+            document_type: processed.document_type,
+            invoice: processed.invoice,
         }));
     }
 

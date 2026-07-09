@@ -1,2 +1,2 @@
-pub mod error;
 pub mod azure;
+pub mod error;

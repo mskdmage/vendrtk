@@ -36,7 +36,6 @@ pub struct File {
     bytes: Vec<u8>,
 }
 
-
 // TODO: might need a more robust way to determine the file type
 impl File {
     pub fn from_bytes(bytes: Vec<u8>) -> Self {

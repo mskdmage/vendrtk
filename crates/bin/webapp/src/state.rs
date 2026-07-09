@@ -1,3 +1,5 @@
+use crate::web::error::Result;
+
 use super::web::services::vendor_reconciliation::VendorReconciliationService;
 
 pub struct AppState {
@@ -5,9 +7,9 @@ pub struct AppState {
 }
 
 impl AppState {
-    pub async fn new() -> Self {
-        Self {
-            vendor_reconciliation_service: VendorReconciliationService::new(),
-        }
+    pub async fn new() -> Result<Self> {
+        Ok(Self {
+            vendor_reconciliation_service: VendorReconciliationService::new().await?,
+        })
     }
 }

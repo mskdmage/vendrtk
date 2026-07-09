@@ -4965,14 +4965,10 @@ dependencies = [
 name = "ocr"
 version = "0.1.0"
 dependencies = [
- "base64 0.22.1",
- "chrono",
  "providers",
- "reqwest 0.13.4",
  "serde",
  "serde_json",
  "thiserror",
- "tokio",
  "tracing",
 ]
 
@@ -5078,6 +5074,20 @@ dependencies = [
  "redox_syscall",
  "smallvec",
  "windows-link",
+]
+
+[[package]]
+name = "parsers"
+version = "0.1.0"
+dependencies = [
+ "ocr",
+ "providers",
+ "rig",
+ "schemars 1.2.1",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tokio",
 ]
 
 [[package]]
@@ -6807,6 +6817,7 @@ dependencies = [
  "chrono",
  "md5",
  "ocr",
+ "parsers",
  "serde",
  "serde_json",
  "sha2 0.11.0",
@@ -7644,6 +7655,7 @@ name = "vendrtk"
 version = "0.1.0"
 dependencies = [
  "ocr",
+ "parsers",
  "pipelines",
  "storage",
 ]

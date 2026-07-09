@@ -1,3 +1,3 @@
 pub mod error;
-pub mod traits;
 pub mod prebuilt;
+pub mod traits;

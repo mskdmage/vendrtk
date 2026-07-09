@@ -32,7 +32,6 @@ impl Default for Config {
 
 impl Config {
     pub fn from_env() -> Self {
-
         let defaults = Self::default();
 
         Self {

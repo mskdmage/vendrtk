@@ -12,10 +12,7 @@ pub fn routes(public_dir: &str) -> Router {
 }
 
 fn serve_dir(public_dir: &str) -> MethodRouter {
-    any_service(
-        ServeDir::new(public_dir)
-        .not_found_service(not_found_handler.into_service())
-    )
+    any_service(ServeDir::new(public_dir).not_found_service(not_found_handler.into_service()))
 }
 
 async fn not_found_handler() -> impl IntoResponse {

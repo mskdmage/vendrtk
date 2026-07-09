@@ -9,4 +9,5 @@ members = [
     "crates/lib/ocr",
     "crates/lib/vendrtk",
     "crates/lib/providers",
+    "crates/lib/parsers",
 ]
