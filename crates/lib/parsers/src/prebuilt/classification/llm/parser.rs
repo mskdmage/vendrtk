@@ -1,7 +1,7 @@
 use crate::error::{Error, Result};
 use crate::models::doc_type::ParsedDocumentType;
 use crate::prebuilt::classification::schemas::ClassifierVerdict;
-use crate::traits::LLMClient;
+use crate::traits::{DocumentClassifier, LLMClient};
 use ocr::traits::OcrProcessedDocument;
 
 const CLASSIFICATION_PREAMBLE: &str = "Classify the document type from the OCR text. \
@@ -33,5 +33,15 @@ impl LLMDocumentClassifier {
 impl Default for LLMDocumentClassifier {
     fn default() -> Self {
         Self
+    }
+}
+
+impl DocumentClassifier for LLMDocumentClassifier {
+    async fn classify<L: LLMClient + Send + Sync, O: OcrProcessedDocument + Send>(
+        &self,
+        client: &L,
+        ocr_result: O,
+    ) -> Result<ParsedDocumentType> {
+        LLMDocumentClassifier::classify(self, client, ocr_result).await
     }
 }

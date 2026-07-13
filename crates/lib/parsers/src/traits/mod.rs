@@ -1,7 +1,9 @@
+mod classifier;
 mod llm_client;
 mod parsed_document;
 mod parser;
 
+pub use classifier::DocumentClassifier;
 pub use llm_client::LLMClient;
 pub use parsed_document::ParsedDocument;
 pub use parsed_document::ParsedPayload;

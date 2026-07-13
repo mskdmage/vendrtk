@@ -1,8 +1,18 @@
-use crate::error::Result;
+use std::sync::Arc;
 
-pub trait Pipeline: Send + Sync {
-    type Input;
-    type Output;
+use crate::traits::Context;
 
-    fn run(&self, input: Self::Input) -> impl Future<Output = Result<Self::Output>>;
+/// Owns shared context for a pipeline definition. Jobs borrow this via `Arc`.
+pub struct Pipeline<C: Context> {
+    ctx: Arc<C>,
+}
+
+impl<C: Context> Pipeline<C> {
+    pub fn new(ctx: C) -> Self {
+        Self { ctx: Arc::new(ctx) }
+    }
+
+    pub fn ctx(&self) -> Arc<C> {
+        Arc::clone(&self.ctx)
+    }
 }

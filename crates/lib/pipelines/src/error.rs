@@ -4,6 +4,15 @@ pub type Result<T> = core::result::Result<T, Error>;
 pub enum Error {
     #[error("pipeline error")]
     Pipeline,
+
+    #[error(transparent)]
+    Storage(#[from] storage::error::Error),
+
+    #[error(transparent)]
+    Ocr(#[from] ocr::error::Error),
+
+    #[error(transparent)]
+    Parse(#[from] parsers::error::Error),
 }
 
 #[cfg(test)]

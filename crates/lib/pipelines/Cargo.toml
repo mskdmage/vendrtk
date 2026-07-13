@@ -6,6 +6,10 @@ edition = "2024"
 [dependencies]
 tracing = "0.1.44"
 thiserror = "2.0.18"
+futures = "0.3.31"
+storage = { path = "../storage" }
+ocr = { path = "../ocr" }
+parsers = { path = "../parsers" }
 
 [dev-dependencies]
 tokio = { version = "1.52.3", features = ["rt", "macros"] }

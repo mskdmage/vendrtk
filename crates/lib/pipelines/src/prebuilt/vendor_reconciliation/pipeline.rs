@@ -1,87 +1,45 @@
-use super::{
-    context::VendorReconciliationContext, input::VendorReconciliationInput,
-    output::VendorReconciliationOutput, stages::stage_ingest::IngestStage,
-};
-use crate::error::Error;
+use ocr::traits::{OCRClient, OcrProcessedDocument};
+use parsers::{models::invoice::ParsedInvoices, traits::LLMClient};
+use storage::traits::Store;
+
 use crate::error::Result;
-use crate::traits::{pipeline::Pipeline, stage::Stage};
-use std::sync::Arc;
-use std::sync::Mutex;
+use crate::prebuilt::vendor_reconciliation::context::VendorReconciliationContext;
+use crate::prebuilt::vendor_reconciliation::stages::{Done, Ingest};
+use crate::traits::{Job, Pipeline};
 
-pub struct VendorReconciliationPipeline {
-    ctx: Arc<Mutex<VendorReconciliationContext>>,
-}
+/// Vendor-reconciliation pipeline: owns context and runs jobs end-to-end.
+pub type VendorReconciliationPipeline<D, C, OS, L, PS> =
+    Pipeline<VendorReconciliationContext<D, C, OS, L, PS>>;
 
-impl VendorReconciliationPipeline {
-    pub fn new() -> Self {
-        Self {
-            ctx: Arc::new(Mutex::new(VendorReconciliationContext::default())),
-        }
-    }
-}
-
-impl Default for VendorReconciliationPipeline {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl Pipeline for VendorReconciliationPipeline {
-    type Input = VendorReconciliationInput;
-    type Output = VendorReconciliationOutput;
-
-    async fn run(&self, input: Self::Input) -> Result<Self::Output> {
-        // Getting a clippy message about the lock being poisoned,
-        // but we're not using the lock in a multi-threaded context for now (we will),
-        // async friendly lock later.
-        let mut ctx = self.ctx.lock().map_err(|_| Error::Pipeline)?;
-
-        let ocr = IngestStage::from(input).run(&mut ctx).await?;
-        let classify = ocr.run(&mut ctx).await?;
-        let parse = classify.run(&mut ctx).await?;
-        parse.run(&mut ctx).await
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::prebuilt::vendor_reconciliation::output::VendorReconciliationOutput;
-
-    fn sample_input() -> VendorReconciliationInput {
-        VendorReconciliationInput {
-            filename: "invoice.pdf".into(),
-            bytes: vec![1, 2, 3],
-        }
+impl<D, C, OS, L, PS> Pipeline<VendorReconciliationContext<D, C, OS, L, PS>>
+where
+    D: OcrProcessedDocument + Send + Sync,
+    C: OCRClient<D> + Send + Sync,
+    OS: Store<D> + Send,
+    L: LLMClient + Send + Sync,
+    PS: Store<ParsedInvoices> + Send,
+{
+    pub async fn run(&self, input: Vec<u8>) -> Result<Done> {
+        let done = Job::new(self.ctx(), Ingest { input })
+            .run()
+            .await?
+            .run()
+            .await?
+            .run()
+            .await?;
+        Ok(done.stage)
     }
 
-    #[tokio::test]
-    async fn test_run_returns_invoice_output_for_sample_input() {
-        let pipeline = VendorReconciliationPipeline::new();
-        let output = pipeline.run(sample_input()).await.unwrap();
+    /// Run many files with at most `concurrency` jobs in flight at once.
+    pub async fn run_many(&self, files: Vec<Vec<u8>>, concurrency: usize) -> Vec<Result<Done>> {
+        let concurrency = concurrency.max(1);
+        let mut results = Vec::with_capacity(files.len());
 
-        assert!(
-            matches!(output, VendorReconciliationOutput::Invoice(ref key) if key == "invoice.pdf")
-        );
-    }
-
-    #[tokio::test]
-    async fn test_run_uses_shared_context_across_stages() {
-        let pipeline = VendorReconciliationPipeline::new();
-        {
-            let mut ctx = pipeline.ctx.lock().unwrap();
-            ctx.dummy_store.insert("seed".into(), "value".into());
+        for chunk in files.chunks(concurrency) {
+            let futs = chunk.iter().cloned().map(|input| self.run(input));
+            results.extend(futures::future::join_all(futs).await);
         }
 
-        pipeline.run(sample_input()).await.unwrap();
-
-        let ctx = pipeline.ctx.lock().unwrap();
-        assert_eq!(ctx.dummy_store.get("seed"), Some(&"value".to_string()));
-    }
-
-    #[test]
-    fn test_default_constructs_pipeline() {
-        let pipeline = VendorReconciliationPipeline::default();
-        assert!(pipeline.ctx.lock().is_ok());
+        results
     }
 }
