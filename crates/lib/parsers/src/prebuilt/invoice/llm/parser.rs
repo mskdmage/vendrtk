@@ -1,7 +1,7 @@
 use crate::error::{Error, Result};
 use crate::models::invoice::ParsedInvoices;
 use crate::prebuilt::invoice::schemas::ExtractedInvoiceList;
-use crate::traits::LLMClient;
+use crate::traits::{LLMClient, Parser};
 use ocr::traits::OcrProcessedDocument;
 
 const EXTRACTION_PREAMBLE: &str = "Extract structured invoice data from the OCR text. \
@@ -37,5 +37,22 @@ impl LLMInvoiceParser {
 impl Default for LLMInvoiceParser {
     fn default() -> Self {
         Self
+    }
+}
+
+impl<O> Parser<O> for LLMInvoiceParser
+where
+    O: OcrProcessedDocument + Send,
+{
+    type Output = ParsedInvoices;
+
+    async fn parse<L: LLMClient + Send + Sync>(
+        &self,
+        client: &L,
+        ocr_result: Option<O>,
+        _bytes: Option<&[u8]>,
+    ) -> Result<Self::Output> {
+        let ocr = ocr_result.ok_or(Error::EmptyOcrContent)?;
+        LLMInvoiceParser::parse(self, client, ocr).await
     }
 }

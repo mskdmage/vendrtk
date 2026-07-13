@@ -1,28 +1,63 @@
-use crate::traits::context::Context;
-use std::collections::HashMap;
+use std::marker::PhantomData;
+use std::sync::{Arc, Mutex};
 
-#[derive(Default)]
-pub struct VendorReconciliationContext {
-    pub dummy_store: HashMap<String, String>,
+use ocr::traits::{OCRClient, OcrProcessedDocument};
+use parsers::{models::invoice::ParsedInvoices, traits::LLMClient};
+use storage::{
+    models::File,
+    traits::{Repository, Store},
+};
+
+use crate::traits::Context;
+
+pub struct VendorReconciliationContext<D, C, OS, L, PS>
+where
+    D: OcrProcessedDocument,
+    C: OCRClient<D>,
+    OS: Store<D>,
+    L: LLMClient,
+    PS: Store<ParsedInvoices>,
+{
+    pub landing: Arc<dyn Repository<File>>,
+    pub ocr_client: Arc<C>,
+    pub ocr_store: Arc<Mutex<OS>>,
+    pub llm_client: Arc<L>,
+    pub parsed_store: Arc<Mutex<PS>>,
+    _doc: PhantomData<D>,
 }
 
-impl Context for VendorReconciliationContext {}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_default_is_empty() {
-        let ctx = VendorReconciliationContext::default();
-        assert!(ctx.dummy_store.is_empty());
+impl<D, C, OS, L, PS> VendorReconciliationContext<D, C, OS, L, PS>
+where
+    D: OcrProcessedDocument,
+    C: OCRClient<D>,
+    OS: Store<D>,
+    L: LLMClient,
+    PS: Store<ParsedInvoices>,
+{
+    pub fn new(
+        landing: Arc<dyn Repository<File>>,
+        ocr_client: Arc<C>,
+        ocr_store: Arc<Mutex<OS>>,
+        llm_client: Arc<L>,
+        parsed_store: Arc<Mutex<PS>>,
+    ) -> Self {
+        Self {
+            landing,
+            ocr_client,
+            ocr_store,
+            llm_client,
+            parsed_store,
+            _doc: PhantomData,
+        }
     }
+}
 
-    #[test]
-    fn test_stores_and_retrieves_values() {
-        let mut ctx = VendorReconciliationContext::default();
-        ctx.dummy_store.insert("key".into(), "value".into());
-
-        assert_eq!(ctx.dummy_store.get("key"), Some(&"value".to_string()));
-    }
+impl<D, C, OS, L, PS> Context for VendorReconciliationContext<D, C, OS, L, PS>
+where
+    D: OcrProcessedDocument + Send + Sync,
+    C: OCRClient<D> + Send + Sync,
+    OS: Store<D> + Send,
+    L: LLMClient + Send + Sync,
+    PS: Store<ParsedInvoices> + Send,
+{
 }
